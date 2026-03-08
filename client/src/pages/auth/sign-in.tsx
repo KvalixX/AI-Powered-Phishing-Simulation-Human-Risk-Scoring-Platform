@@ -1,131 +1,183 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { Link } from "wouter";
+import { Eye, EyeOff, Shield, Lock, Mail, ArrowRight, Zap, Users, Target } from "lucide-react";
+
+const stats = [
+  { icon: Target, value: "2,400+", label: "Simulations Run" },
+  { icon: Users, value: "98%", label: "Coverage Rate" },
+  { icon: Zap, value: "−42%", label: "Avg Risk Reduction" },
+];
 
 export default function SignIn() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    rememberMe: false,
-  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Sign in submitted:", formData);
-    // Handle sign in logic here
+    setLoading(true);
+    setTimeout(() => setLoading(false), 1200);
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <Card className="shadow-lg border border-gray-200">
-          <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-3xl font-bold text-gray-900">Sign In</CardTitle>
-            <p className="text-sm text-gray-600">Welcome back! Please sign in to your account</p>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-normal text-gray-700">
-                  Email
-                </Label>
+    <div className="min-h-screen flex">
+      {/* Left Panel */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-stone-900 via-stone-800 to-slate-900 flex-col justify-between p-12 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 -left-12 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/4 w-px h-64 bg-gradient-to-b from-transparent via-blue-500/20 to-transparent" />
+          <div className="absolute top-1/4 left-1/2 w-px h-48 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent" />
+          {/* Grid pattern */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
+        </div>
+
+        {/* Brand */}
+        <div className="relative z-10 flex items-center gap-3">
+          <img src="https://www.rekrute.com/rekrute/file/entrepriseLogoInfo/recruiter_id/314572" alt="Logo" className="w-10 h-10 object-contain bg-white rounded-xl shadow-lg shadow-blue-900/50 p-1" />
+          <div>
+            <span className="text-white font-bold text-lg">KIRA Phishing</span>
+            <p className="text-stone-400 text-xs">Risk Platform</p>
+          </div>
+        </div>
+
+        {/* Hero Text */}
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1 mb-6">
+            <Zap className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-blue-300 text-xs font-medium">AI-Powered Security Training</span>
+          </div>
+          <h1 className="text-4xl font-bold text-white leading-tight mb-4">
+            Strengthen your<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+              human firewall
+            </span>
+          </h1>
+          <p className="text-stone-400 text-base leading-relaxed max-w-sm">
+            Simulate real-world phishing attacks, identify vulnerabilities, and train your team with AI-generated campaigns.
+          </p>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mt-10">
+            {stats.map((s) => (
+              <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <s.icon className="w-5 h-5 text-blue-400 mb-2" />
+                <div className="text-xl font-bold text-white">{s.value}</div>
+                <div className="text-xs text-stone-400 mt-0.5">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel – Form */}
+      <div className="flex-1 flex items-center justify-center p-8 bg-stone-50 dark:bg-stone-950">
+        <div className="w-full max-w-sm">
+          {/* Mobile brand */}
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <img src="https://www.rekrute.com/rekrute/file/entrepriseLogoInfo/recruiter_id/314572" alt="Logo" className="w-8 h-8 object-contain rounded-lg" />
+            <span className="font-bold text-stone-900 dark:text-white">KIRA Phishing</span>
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-stone-900 dark:text-white">Welcome back</h2>
+            <p className="text-stone-500 dark:text-stone-400 mt-1.5 text-sm">
+              Sign in to your security dashboard
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                Email address
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
                 <Input
                   id="email"
-                  name="email"
                   type="email"
+                  placeholder="admin@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-11 bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-700"
                   required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="your@email.com"
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-normal text-gray-700">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember-me"
-                    checked={formData.rememberMe}
-                    onCheckedChange={(checked) => 
-                      setFormData({ ...formData, rememberMe: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor="remember-me" className="text-sm text-gray-700">
-                    Remember me
-                  </Label>
-                </div>
-                <Button variant="secondary" size="sm">
-                  Forgot password?
-                </Button>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-              >
-                Sign In
-              </Button>
-            </form>
-
-            <div className="space-y-4">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Button variant="secondary" className="w-full">
-                  <svg className="w-5 h-5 mr-2 text-red-500" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                  Google
-                </Button>
-                <Button variant="secondary" className="w-full">
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                  </svg>
-                  GitHub
-                </Button>
               </div>
             </div>
 
-            <p className="text-center text-sm text-gray-600">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                  Password
+                </Label>
+                <Link to="/auth/reset-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10 h-11 bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-700"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-11 bg-stone-900 hover:bg-stone-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-stone-500 dark:text-stone-400">
               Don't have an account?{" "}
-              <Link href="/auth/sign-up">
-                <a className="font-normal text-primary-600 hover:text-primary-700">Sign up</a>
+              <Link to="/auth/sign-up" className="text-blue-600 hover:text-blue-700 font-medium">
+                Create account
               </Link>
             </p>
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="mt-8 p-3 bg-stone-100 dark:bg-stone-800 rounded-lg flex items-start gap-2.5">
+            <Shield className="w-4 h-4 text-stone-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              Protected by enterprise-grade security. All sessions are encrypted and monitored.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

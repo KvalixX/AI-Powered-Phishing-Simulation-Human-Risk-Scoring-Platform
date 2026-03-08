@@ -64,9 +64,11 @@ Les attaques de phishing constituent aujourd'hui l'un des principaux vecteurs de
 - **Frontend**: React + TypeScript + Vite
 - **UI Framework**: Tailwind CSS + shadcn/ui
 - **Visualisation**: Recharts
-- **Icons**: Lucide React
+- **Backend**: Laravel (PHP 8.2+)
+- **Base de données**: MySQL
+- **Authentication**: Laravel Sanctum / JWT
 - **State Management**: React Query
-- **Routing**: React Router DOM
+- **Routing**: React Router DOM (Frontend)
 
 ## Installation
 
@@ -87,24 +89,17 @@ npm run dev
 ## Structure du Projet
 
 ```
-client/
+backend/                # Application Laravel (API)
+├── app/                    # Logique métier (Models, Controllers)
+├── routes/api.php          # Définition des endpoints API
+├── database/               # Migrations et Seeders MySQL
+└── .env                    # Configuration MySQL / App
+client/                 # Frontend React application
 ├── src/
-│   ├── components/
-│   │   ├── ui/          # Composants shadcn/ui
-│   │   ├── dashboard/   # Composants du dashboard
-│   │   └── layout/      # Sidebar, Footer
-│   ├── pages/
-│   │   ├── dashboard.tsx      # Vue d'ensemble
-│   │   ├── campaigns.tsx      # Gestion des campagnes
-│   │   ├── risk-analytics.tsx # Analyse de risque
-│   │   ├── training.tsx       # Formation
-│   │   ├── users.tsx          # Gestion utilisateurs
-│   │   └── reports.tsx        # Rapports
-│   ├── lib/
-│   │   └── utils.ts     # Fonctions utilitaires
-│   └── App.tsx          # Configuration des routes
-├── public/
-│   └── images/          # Assets
+│   ├── components/         # Composants UI
+│   ├── pages/              # Routes React
+│   ├── services/api.ts     # Consommation de l'API Laravel
+│   └── lib/                # Config & Utils
 └── package.json
 ```
 

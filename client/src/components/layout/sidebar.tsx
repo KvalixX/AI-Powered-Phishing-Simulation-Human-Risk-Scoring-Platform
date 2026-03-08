@@ -1,133 +1,104 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { 
-  LayoutDashboard, 
+import {
+  LayoutDashboard,
   Target,
   ShieldAlert,
   GraduationCap,
   Users,
   FileText,
-  LogIn, 
+  LogIn,
   UserPlus,
-  X
+  BarChart3,
+  User,
+  X,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  {
-    title: "Dashboard",
-    href: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Campagnes",
-    href: "/campaigns",
-    icon: Target,
-  },
-  {
-    title: "Analyse de Risque",
-    href: "/risk-analytics",
-    icon: ShieldAlert,
-  },
-  {
-    title: "Formation",
-    href: "/training",
-    icon: GraduationCap,
-  },
-  {
-    title: "Utilisateurs",
-    href: "/users",
-    icon: Users,
-  },
-  {
-    title: "Rapports",
-    href: "/reports",
-    icon: FileText,
-  },
+  { title: "Dashboard", href: "/", icon: LayoutDashboard },
+  { title: "Campaigns", href: "/campaigns", icon: Target },
+  { title: "Risk Analysis", href: "/risk-analytics", icon: ShieldAlert },
+  { title: "Analytics", href: "/analytics", icon: BarChart3 },
+  { title: "Training", href: "/training", icon: GraduationCap },
+  { title: "Users", href: "/users", icon: Users },
+  { title: "User Profile", href: "/profile", icon: User },
+  { title: "Reports", href: "/reports", icon: FileText },
 ];
 
 const authItems = [
-  {
-    title: "Connexion",
-    href: "/auth/sign-in",
-    icon: LogIn,
-  },
-  {
-    title: "Inscription",
-    href: "/auth/sign-up",
-    icon: UserPlus,
-  },
+  { title: "Sign In", href: "/auth/sign-in", icon: LogIn },
+  { title: "Register", href: "/auth/sign-up", icon: UserPlus },
 ];
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const location = useLocation();
 
   return (
-    <aside className="w-60 bg-white lg:bg-transparent flex flex-col relative z-10 h-full border-r border-stone-200 lg:border-0">
-      {/* Brand Header */}
-      <div className="p-6 pb-0 relative z-10 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-stone-900">
-            PhishGuard AI
-          </h1>
-          <p className="text-xs text-stone-500">Simulation & Formation</p>
+    <aside className="w-56 bg-white flex flex-col relative z-10 h-full border-r border-stone-200">
+      {/* Brand */}
+      <div className="px-3 py-3 flex items-center justify-between border-b border-stone-100">
+        <div className="flex items-center gap-3">
+          <img src="https://www.rekrute.com/rekrute/file/entrepriseLogoInfo/recruiter_id/314572" alt="Logo" className="w-8 h-8 object-contain rounded-md" />
+          <div>
+            <h1 className="text-sm font-bold text-stone-900 leading-none">KIRA Phishing</h1>
+            <p className="text-[10px] text-stone-400 mt-1">Risk Platform</p>
+          </div>
         </div>
-        {/* Close button for mobile */}
         {onClose && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="lg:hidden p-1 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+            className="lg:hidden p-0.5 h-5 w-5 text-stone-500"
           >
-            <X className="h-5 w-5" />
+            <X className="h-3 w-3" />
           </Button>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2 relative z-10">
+      <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
+        <p className="px-2 pt-1 pb-1 text-[9px] font-semibold text-stone-400 uppercase tracking-wider">
+          Menu
+        </p>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.href;
-          
           return (
             <NavLink key={item.href} to={item.href}>
               <div
                 className={cn(
-                  "flex items-center text-sm font-normal rounded-lg cursor-pointer",
+                  "flex items-center text-xs rounded-md cursor-pointer px-3 py-2 transition-all duration-150",
                   isActive
-                    ? "px-3 py-2 shadow-sm hover:shadow-md bg-stone-800 hover:bg-stone-700 relative bg-gradient-to-b from-stone-700 to-stone-800 border border-stone-900 text-stone-50 hover:bg-gradient-to-b hover:from-stone-800 hover:to-stone-800 hover:border-stone-900 after:absolute after:inset-0 after:rounded-[inherit] after:box-shadow after:shadow-[inset_0_1px_0px_rgba(255,255,255,0.25),inset_0_-2px_0px_rgba(0,0,0,0.35)] after:pointer-events-none duration-300 ease-in align-middle select-none font-sans text-center antialiased"
-                    : "px-3 py-2 text-stone-700 hover:bg-stone-100 transition-colors duration-200 border border-transparent"
+                    ? "bg-stone-900 text-white font-medium shadow-sm"
+                    : "text-stone-600 hover:bg-stone-100 hover:text-stone-900 font-normal"
                 )}
               >
-                <Icon className="mr-3 w-4 h-4" />
+                <Icon className="mr-3 w-4 h-4 shrink-0" />
                 {item.title}
               </div>
             </NavLink>
           );
         })}
 
-        {/* Auth Section */}
-        <div className="pt-4 border-t border-stone-200 mt-4">
-          <p className="px-4 text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">
-            AUTHENTIFICATION
-          </p>
+        <div className="pt-2 mt-2 border-t border-stone-200">
+          <p className="px-2 pb-1 text-[9px] font-semibold text-stone-400 uppercase tracking-wider">Auth</p>
           {authItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
-            
             return (
               <NavLink key={item.href} to={item.href}>
                 <div
                   className={cn(
-                    "flex items-center text-sm font-normal rounded-lg cursor-pointer",
+                    "flex items-center text-xs rounded-md cursor-pointer px-3 py-2 transition-all duration-150",
                     isActive
-                      ? "px-3 py-2 shadow-sm hover:shadow-md bg-stone-800 hover:bg-stone-700 relative bg-gradient-to-b from-stone-700 to-stone-800 border border-stone-900 text-stone-50 hover:bg-gradient-to-b hover:from-stone-800 hover:to-stone-800 hover:border-stone-900 after:absolute after:inset-0 after:rounded-[inherit] after:box-shadow after:shadow-[inset_0_1px_0px_rgba(255,255,255,0.25),inset_0_-2px_0px_rgba(0,0,0,0.35)] after:pointer-events-none duration-300 ease-in align-middle select-none font-sans text-center antialiased"
-                      : "px-3 py-2 text-stone-700 hover:bg-stone-100 transition-colors duration-200 border border-transparent"
+                      ? "bg-stone-900 text-white font-medium shadow-sm"
+                      : "text-stone-600 hover:bg-stone-100 hover:text-stone-900 font-normal"
                   )}
                 >
-                  <Icon className="mr-3 w-4 h-4" />
+                  <Icon className="mr-3 w-4 h-4 shrink-0" />
                   {item.title}
                 </div>
               </NavLink>
@@ -135,7 +106,6 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
           })}
         </div>
       </nav>
-
     </aside>
   );
 }

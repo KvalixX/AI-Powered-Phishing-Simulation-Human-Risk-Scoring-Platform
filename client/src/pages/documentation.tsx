@@ -75,10 +75,14 @@ cd material-shadcn`}
               <Terminal className="h-4 w-4" />
               Environment Setup
             </h3>
-            <p className="text-stone-600 text-sm mb-2">Create a .env file in the root directory:</p>
+            <p className="text-stone-600 text-sm mb-2">Configurez votre fichier .env dans le dossier backend/ :</p>
             <CodeBlock 
-              code={`DATABASE_URL="your-database-url"
-NODE_ENV="development"`} 
+              code={`DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=kira_phishing
+DB_USERNAME=root
+DB_PASSWORD=`} 
               language="env" 
               id="env" 
             />
@@ -120,10 +124,9 @@ NODE_ENV="development"`}
             <div className="space-y-2">
               <h4 className="font-semibold text-stone-900">Backend</h4>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">Express.js</Badge>
-                <Badge variant="secondary">Node.js</Badge>
-                <Badge variant="secondary">Drizzle ORM</Badge>
-                <Badge variant="secondary">PostgreSQL</Badge>
+                <Badge variant="secondary">Laravel 11</Badge>
+                <Badge variant="secondary">PHP 8.2+</Badge>
+                <Badge variant="secondary">MySQL 8.0</Badge>
               </div>
             </div>
             <div className="space-y-2">
@@ -149,25 +152,17 @@ NODE_ENV="development"`}
         <CardContent>
           <CodeBlock 
             code={`project-root/
-├── client/                 # Frontend React application
+├── backend/                # Laravel API
+│   ├── app/                # Models & Controllers
+│   ├── routes/             # api.php, web.php
+│   └── database/           # Migrations & Seeders
+├── client/                 # React application
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   │   ├── ui/         # shadcn/ui components
-│   │   │   ├── dashboard/  # Dashboard-specific components
-│   │   │   └── layout/     # Layout components
-│   │   ├── pages/          # Application pages/routes
-│   │   ├── lib/            # Utility functions and configs
-│   │   └── hooks/          # Custom React hooks
-├── server/                 # Backend Express.js application
-│   ├── routes.ts           # API route definitions
-│   ├── storage.ts          # Database storage interface
-│   └── index.ts            # Server entry point
-├── shared/                 # Shared types and schemas
-│   └── schema.ts           # Database schemas and types
-├── package.json            # Dependencies and scripts
-├── vite.config.ts          # Vite configuration
-├── tailwind.config.ts      # Tailwind CSS configuration
-└── drizzle.config.ts       # Database configuration`}
+│   │   ├── components/     # UI Components
+│   │   ├── pages/          # React Routes
+│   │   └── services/       # API Services (Axios)
+├── package.json            # Scripts globaux
+└── .env                    # Configuration backend`}
             language="text"
             id="structure"
           />
@@ -182,24 +177,16 @@ NODE_ENV="development"`}
         <CardContent className="space-y-4">
           <div>
             <h4 className="font-semibold text-stone-900 mb-2">Development</h4>
-            <CodeBlock code="npm run dev" language="bash" id="dev-build" />
-          </div>
-          
-          <div>
-            <h4 className="font-semibold text-stone-900 mb-2">Production Build</h4>
-            <CodeBlock code="npm run build" language="bash" id="prod-build" />
-          </div>
-          
-          <div>
-            <h4 className="font-semibold text-stone-900 mb-2">Start Production Server</h4>
-            <CodeBlock code="npm start" language="bash" id="start-prod" />
+            <CodeBlock code="php artisan serve" language="bash" id="dev-backend" />
+            <CodeBlock code="npm run dev (dans client/)" language="bash" id="dev-frontend" />
           </div>
           
           <div>
             <h4 className="font-semibold text-stone-900 mb-2">Database Operations</h4>
             <CodeBlock 
-              code={`npm run db:push     # Apply schema changes
-npm run db:studio   # Open Drizzle Studio`} 
+              code={`php artisan migrate         # Lancer les migrations
+php artisan db:seed         # Remplir avec des données de test
+php artisan make:controller # Créer un contrôleur`} 
               language="bash" 
               id="db-commands" 
             />
