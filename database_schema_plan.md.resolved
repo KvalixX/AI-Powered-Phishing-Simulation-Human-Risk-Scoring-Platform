@@ -1,0 +1,158 @@
+Architecture de la Base de Données
+
+Ce document décrit les modèles de données nécessaires pour compléter le projet PhishIntel, conformément à l'Analyse des Manques (ANALYSE_ET_PLAN.md). 
+
+Il comprend les schémas existants à modifier et les nouveaux schémas à créer pour supporter les fonctionnalités d'IA, de Scoring (HPRS), et d'Apprentissage par Renforcement (RL).
+
+L'architecture présentée ici est facilement adaptable pour une base de données relationnelle (MySQL) ou NoSQL (MongoDB).
+
+## DIAGRAMME ENTITÉ-ASSOCIATION (ERD)
+
+```mermaid
+erDiagram
+    CONTACT ||--o{ USER_RISK_SCORE : "a un score de"
+    CONTACT ||--o{ BEHAVIORAL_EVENT : "génère"
+    CONTACT ||--o{ TRAINING : "suit"
+    CONTACT {
+        int id PK
+        string email
+        string firstName
+        string lastName
+        string department "NOUVEAU: Département"
+        string position "NOUVEAU: Poste"
+        string seniority "NOUVEAU: Ancienneté"
+        string language "NOUVEAU: Langue"
+    }
+
+    CAMPAIGN ||--o{ BEHAVIORAL_EVENT : "traque"
+    CAMPAIGN ||--o| CAMPAIGN_METRICS : "possède des"
+    CAMPAIGN ||--o| RL_POLICY : "utilise"
+    CAMPAIGN {
+        int id PK
+        string name
+        string difficultyLevel "NOUVEAU: Niveau difficulté"
+        json adaptationParams "NOUVEAU: Paramètres IA"
+        boolean rlEnabled "NOUVEAU: RL activé"
+    }
+
+    USER_RISK_SCORE {
+        int id PK
+        int contactId FK
+        float score
+        string level "faible/moyen/elevé/critique"
+        json features "comportementales, psycho"
+        float confidence
+        datetime lastUpdated
+    }
+
+    BEHAVIORAL_EVENT {
+        int id PK
+        int contactId FK
+        int campaignId FK
+        string eventType "click/submission/report/ignore"
+        datetime timestamp
+        int reactionTime "Temps de réaction (ms)"
+        string device
+        string ipAddress
+        json context
+    }
+
+    TRAINING {
+        int id PK
+        int contactId FK
+        string type "vidéo/article/quiz"
+        string content
+        string recommendedBy "Modèle IA responsable"
+        boolean completed
+        float impact "Amélioration du score estimée"
+    }
+
+    RL_POLICY {
+        int id PK
+        int campaignId FK
+        json campaignParams "ton, urgence, complexité"
+        float rewards "Récompenses du modèle"
+        json state "État mémorisé"
+    }
+
+    CAMPAIGN_METRICS {
+        int id PK
+        int campaignId FK
+        float ctr "Click-Through Rate"
+        float precision
+        float aucRoc
+        json statisticalTests
+    }
+```
+
+---
+
+## 🏗️ 1. Nouveaux Modèles à Créer (Tables / Collections)
+
+### 📊 `UserRiskScore` (Score de Risque de l'Utilisateur)
+Cette table stocke l'évaluation par l'IA (le modèle HPRS) de la vulnérabilité d'un contact au phishing.
+- **`contact_id`** (Clé étrangère -> Contact)
+- **`score`** (Float, de 0 à 100)
+- **`level`** (Enum: `faible`, `moyen`, `élevé`, `critique`)
+- **`features`** (JSON : caractéristiques comportementales ou psychologiques déduites)
+- **`confidence`** (Float : indice de confiance du modèle IA)
+- **`last_updated`** (Timestamp)
+
+### 🖱️ `BehavioralEvent` (Événements Comportementaux Historiques)
+Au lieu de simples clics, cette table suit le comportement complet en temps réel pour l'analyse.
+- **`contact_id`** (Clé étrangère -> Contact)
+- **`campaign_id`** (Clé étrangère -> Campaign)
+- **`event_type`** (Enum: `click`, `submission`, `report`, [ignore](file:///c:/Users/aitel/OneDrive/Bureau/phishintel/.gitignore))
+- **`timestamp`** (Date/Heure exacte)
+- **`reaction_time`** (Int : millisecondes entre la réception et le clic, point de donnée clé pour l'IA)
+- **`device`**, **`ip_address`** (String)
+- **`context`** (JSON)
+
+### 🎓 `Training` (Formations Assignées)
+Gère le module de formation adaptative.
+- **`contact_id`** (Clé étrangère -> Contact)
+- **`type`** (String : ex: `video`, `quiz`)
+- **`content`** (String / Text : l'URL ou le contenu de la formation)
+- **`recommended_by`** (String : modèle IA qui a fait la recommandation)
+- **`completed`** (Boolean : default `false`)
+- **`impact`** (Float : évolution constatée du risque après formation)
+
+### 🧠 `RLPolicy` (Apprentissage par Renforcement)
+Permet à l'algorithme d'adapter la difficulté et le ton de la campagne de manière dynamique.
+- **`campaign_id`** (Clé étrangère -> Campaign)
+- **`campaign_params`** (JSON : contient le ton, l'urgence, la complexité du message IA)
+- **`rewards`** (Float : récompense calculée suite aux actions de l'utilisateur)
+- **`state`** (JSON : état local au moment de l'action)
+
+### 📈 `CampaignMetrics` (Métriques Scientifiques et Performances ML)
+Stocke l'efficacité d'une campagne vis-à-vis des modèles de ML.
+- **`campaign_id`** (Clé étrangère -> Campaign)
+- **`ctr`** (Float : Click-Through Rate brut)
+- **`precision`**, **`auc_roc`** (Float : métriques de modèle)
+- **`statistical_tests`** (JSON : p-values, t-tests, ANOVA etc.)
+
+---
+
+## 🛠️ 2. Mises à jour des Modèles Existants (Champs à Ajouter)
+
+En plus de créer les nouvelles tables, vous devez ajouter des colonnes aux tables existantes :
+
+### Table/Collection `Contact` (Victimes / Employés)
+*Pour permettre une personnalisation LLM du mail (par département ou poste) et nourrir le modèle ML.*
+- **`department`** (String : Marketing, IT, RH, etc.)
+- **`position`** (String : Directeur, Stagiaire, etc.)
+- **`seniority`** (String : Junior, Senior)
+- **`language`** (String : `fr`, `en`, etc.)
+- **`training_history`** (JSON : optionnel, lien vers l'historique)
+
+### Table/Collection `Campaign`
+*Pour gérer le niveau de complexité de l'IA et les options RL.*
+- **`difficulty_level`** (Enum: `facile`, `moyen`, `difficile`, `expert`)
+- **`adaptation_params`** (JSON : règles globales d'adaptation)
+- **`rl_enabled`** (Boolean : default `false`, active l'Apprentissage par Renforcement)
+
+### Table/Collection `EmailClick` (Optionnel si remplacé par BehavioralEvent)
+*S'il existe déjà une table pour les clics d'email, ajoutez ces champs :*
+- **`reaction_time`** (Int : millisecondes ou secondes)
+- **`time_of_day`** (Time / String : moment de la journée)
+- **`day_of_week`** (Int / String : jour de la semaine)

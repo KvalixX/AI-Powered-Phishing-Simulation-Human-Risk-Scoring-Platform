@@ -2,11 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Target, 
-  ShieldAlert, 
-  Users, 
-  TrendingUp, 
+import {
+  Target,
+  ShieldAlert,
+  Users,
+  TrendingUp,
   Brain,
   Mail,
   MousePointer,
@@ -20,13 +20,13 @@ import {
   Lock,
   Eye
 } from "lucide-react";
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -58,7 +58,8 @@ const departmentData = [
   { dept: "Ventes", score: 62, users: 52 },
 ];
 
-const recentCampaigns = [
+// Mocks kept for charts and insights that don't have matching backend implementation yet
+const recentCampaignsMock = [
   { id: 1, name: "Campagne Q2 - Email CEO", status: "active", sent: 245, opened: 189, clicked: 67, reported: 23 },
   { id: 2, name: "Test Login Microsoft", status: "completed", sent: 150, opened: 134, clicked: 45, reported: 89 },
   { id: 3, name: "Fausse Facture", status: "scheduled", sent: 0, opened: 0, clicked: 0, reported: 0 },
@@ -77,7 +78,24 @@ const quickActions = [
   { icon: AlertTriangle, label: "Alerte Rapide", color: "bg-orange-500" },
 ];
 
+import { useCampaigns, useRiskScores } from "@/hooks/useApi";
+
 export default function Dashboard() {
+  const { data: campaigns = [], isLoading: loadingCampaigns } = useCampaigns();
+  const { data: riskScores = [], isLoading: loadingRiskScores } = useRiskScores();
+
+  // Sort by started_at or id descending to get most recent, take top 5
+  const recentCampaigns = campaigns
+    .slice()
+    .sort((a, b) => b.id - a.id)
+    .slice(0, 5);
+
+  // Calculate average risk score globally from users
+  const globalRiskScore = riskScores.length > 0
+    ? Math.round(riskScores.reduce((acc, curr) => acc + curr.score, 0) / riskScores.length)
+    : 38; // fallback to 38 if empty
+
+  const activeCampaignsCount = campaigns.filter(c => c.status === 'active').length;
   return (
     <div className="h-full overflow-y-auto p-6 custom-scrollbar">
       {/* Hero Section */}
@@ -93,19 +111,19 @@ export default function Dashboard() {
                 Simulation de Phishing Intelligente
               </h1>
               <p className="text-stone-300 text-lg mb-6 leading-relaxed">
-                Évaluez le risque humain avec des campagnes réalistes générées par IA, 
+                Évaluez le risque humain avec des campagnes réalistes générées par IA,
                 mesurez les comportements et formez automatiquement vos équipes.
               </p>
               <div className="flex gap-3">
-                <Button 
+                <Button
                   size="lg"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Target className="w-4 h-4 mr-2" />
                   Lancer Campagne
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="lg"
                   className="border-stone-600 text-stone-300 hover:bg-stone-800"
                 >
@@ -118,9 +136,11 @@ export default function Dashboard() {
               <div className="relative">
                 <div className="w-48 h-48 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-5xl font-bold text-white">38</div>
-                    <div className="text-sm text-stone-400">Score de Risque</div>
-                    <div className="text-xs text-green-400 mt-1">↓ 12% ce mois</div>
+                    <div className="text-5xl font-bold text-white">
+                      {loadingRiskScores ? "..." : globalRiskScore}
+                    </div>
+                    <div className="text-sm text-stone-400">Score de Risque Global</div>
+                    <div className="text-xs text-green-400 mt-1">HPRS IA V1.0</div>
                   </div>
                 </div>
                 <div className="absolute -top-2 -right-2">
@@ -158,7 +178,9 @@ export default function Dashboard() {
                 +3 ce mois
               </Badge>
             </div>
-            <div className="text-2xl font-bold text-stone-900">12</div>
+            <div className="text-2xl font-bold text-stone-900">
+              {loadingCampaigns ? "..." : activeCampaignsCount}
+            </div>
             <p className="text-sm text-stone-500">Campagnes Actives</p>
           </CardContent>
         </Card>
@@ -173,9 +195,11 @@ export default function Dashboard() {
                 Attention
               </Badge>
             </div>
-            <div className="text-2xl font-bold text-stone-900">38%</div>
+            <div className="text-2xl font-bold text-stone-900">
+              {loadingRiskScores ? "..." : `${globalRiskScore}%`}
+            </div>
             <p className="text-sm text-stone-500">Score de Risque Global</p>
-            <Progress value={38} className="mt-3" />
+            <Progress value={globalRiskScore} className="mt-3" />
           </CardContent>
         </Card>
 
@@ -228,22 +252,22 @@ export default function Dashboard() {
               <AreaChart data={riskScoreData}>
                 <defs>
                   <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
                 <YAxis stroke="#6b7280" fontSize={12} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="score" 
-                  stroke="#3b82f6" 
-                  fillOpacity={1} 
-                  fill="url(#colorScore)" 
+                <Area
+                  type="monotone"
+                  dataKey="score"
+                  stroke="#3b82f6"
+                  fillOpacity={1}
+                  fill="url(#colorScore)"
                   strokeWidth={2}
                 />
               </AreaChart>
@@ -301,22 +325,20 @@ export default function Dashboard() {
         <CardContent>
           <div className="space-y-3">
             {aiInsights.map((insight, index) => (
-              <div 
-                key={index} 
-                className={`flex items-start gap-3 p-3 rounded-lg ${
-                  insight.type === "warning" ? "bg-amber-50 border border-amber-200" :
-                  insight.type === "success" ? "bg-green-50 border border-green-200" :
-                  "bg-blue-50 border border-blue-200"
-                }`}
+              <div
+                key={index}
+                className={`flex items-start gap-3 p-3 rounded-lg ${insight.type === "warning" ? "bg-amber-50 border border-amber-200" :
+                    insight.type === "success" ? "bg-green-50 border border-green-200" :
+                      "bg-blue-50 border border-blue-200"
+                  }`}
               >
                 {insight.type === "warning" && <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />}
                 {insight.type === "success" && <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />}
                 {insight.type === "info" && <Eye className="w-5 h-5 text-blue-600 mt-0.5" />}
-                <p className={`text-sm ${
-                  insight.type === "warning" ? "text-amber-800" :
-                  insight.type === "success" ? "text-green-800" :
-                  "text-blue-800"
-                }`}>
+                <p className={`text-sm ${insight.type === "warning" ? "text-amber-800" :
+                    insight.type === "success" ? "text-green-800" :
+                      "text-blue-800"
+                  }`}>
                   {insight.message}
                 </p>
               </div>
@@ -345,7 +367,7 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="dept" stroke="#6b7280" fontSize={12} />
               <YAxis stroke="#6b7280" fontSize={12} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
               />
               <Legend />
@@ -382,41 +404,51 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentCampaigns.map((campaign) => (
-                  <tr key={campaign.id} className="border-b border-stone-100 hover:bg-stone-50">
-                    <td className="py-3 px-4">
-                      <div>
-                        <p className="font-medium text-stone-900">{campaign.name}</p>
-                        <p className="text-xs text-stone-500">ID: #{campaign.id.toString().padStart(4, '0')}</p>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge 
-                        className={
-                          campaign.status === "active" ? "bg-green-100 text-green-700" :
-                          campaign.status === "completed" ? "bg-blue-100 text-blue-700" :
-                          "bg-amber-100 text-amber-700"
-                        }
-                      >
-                        {campaign.status === "active" ? "Active" :
-                         campaign.status === "completed" ? "Terminée" : "Planifiée"}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-center text-sm text-stone-600">{campaign.sent}</td>
-                    <td className="py-3 px-4 text-center text-sm text-stone-600">{campaign.opened}</td>
-                    <td className="py-3 px-4 text-center">
-                      <span className={`text-sm font-medium ${campaign.clicked > 50 ? 'text-red-600' : 'text-stone-600'}`}>
-                        {campaign.clicked}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className="text-sm font-medium text-green-600">{campaign.reported}</span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <Button variant="ghost" size="sm">Détails</Button>
-                    </td>
+                {loadingCampaigns ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-stone-500">Chargement des campagnes...</td>
                   </tr>
-                ))}
+                ) : recentCampaigns.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-stone-500">Aucune campagne récente</td>
+                  </tr>
+                ) : (
+                  recentCampaigns.map((campaign) => (
+                    <tr key={campaign.id} className="border-b border-stone-100 hover:bg-stone-50">
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="font-medium text-stone-900">{campaign.name}</p>
+                          <p className="text-xs text-stone-500">ID: #{campaign.id.toString().padStart(4, '0')}</p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          className={
+                            campaign.status === "active" ? "bg-green-100 text-green-700" :
+                              campaign.status === "completed" ? "bg-blue-100 text-blue-700" :
+                                "bg-amber-100 text-amber-700"
+                          }
+                        >
+                          {campaign.status === "active" ? "Active" :
+                            campaign.status === "completed" ? "Terminée" :
+                              campaign.status === "draft" ? "Brouillon" : "Planifiée"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-center text-sm text-stone-600">-</td>
+                      <td className="py-3 px-4 text-center text-sm text-stone-600">-</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`text-sm font-medium text-stone-600`}>
+                          {campaign.metrics?.ctr ? Math.round(campaign.metrics.ctr) + '%' : '-'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="text-sm font-medium text-green-600">-</span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <Button variant="ghost" size="sm">Détails</Button>
+                      </td>
+                    </tr>
+                  )))}
               </tbody>
             </table>
           </div>

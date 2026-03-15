@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+class Campaign extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'description',
+        'status',
+        'user_id',
+        'difficulty_level',
+        'adaptation_params',
+        'rl_enabled',
+        'started_at',
+        'ended_at',
+    ];
+
+    protected $casts = [
+        'adaptation_params' => 'array',
+        'rl_enabled' => 'boolean',
+        'started_at' => 'datetime',
+        'ended_at' => 'datetime',
+    ];
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function behavioralEvents(): HasMany
+    {
+        return $this->hasMany(BehavioralEvent::class);
+    }
+
+    public function emailClicks(): HasMany
+    {
+        return $this->hasMany(EmailClick::class);
+    }
+
+    public function rlPolicy(): HasOne
+    {
+        return $this->hasOne(RLPolicy::class);
+    }
+
+    public function metrics(): HasOne
+    {
+        return $this->hasOne(CampaignMetrics::class);
+    }
+}
