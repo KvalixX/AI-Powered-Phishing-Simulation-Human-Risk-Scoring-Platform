@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Shield, Lock, Mail, ArrowRight, Zap, Users, Target } from "lucide-react";
+import { useAppStore } from "@/store/useAppStore";
+
+import { authApi } from "@/services/api";
 
 const stats = [
   { icon: Target, value: "2,400+", label: "Simulations Run" },
@@ -20,40 +23,28 @@ export default function SignIn() {
 
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setCurrentUser, setToken } = useAppStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const res = await fetch("http://localhost:8000/api/v1/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({ email, password })
-      });
+      const { data } = await authApi.login({ email, password });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Identifiants incorrects");
-      }
-
-      const data = await res.json();
-      localStorage.setItem("auth_token", data.token);
+      setToken(data.token);
+      setCurrentUser(data.user);
       
       toast({
         title: "Welcome back",
         description: "You have successfully signed in.",
       });
 
-      // Could also set user state if there is a global context
       navigate("/");
     } catch (error: any) {
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: error.response?.data?.message || error.message,
         variant: "destructive",
       });
     } finally {

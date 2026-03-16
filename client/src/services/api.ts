@@ -2,9 +2,10 @@ import axios from "axios";
 
 // Axios instance
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: "/api/v1",
   headers: {
     "Content-Type": "application/json",
+    "Accept": "application/json",
   },
 });
 
@@ -23,7 +24,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("auth_token");
-      window.location.href = "/sign-in";
+      // Use window.location only if not on sign-in/sign-up already
+      if (!window.location.pathname.includes("/sign-")) {
+        window.location.href = "/sign-in";
+      }
     }
     return Promise.reject(error);
   }
@@ -31,13 +35,14 @@ api.interceptors.response.use(
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export const authApi = {
-  login: (email: string, password: string) =>
-    api.post("/auth/login", { email, password }),
-  register: (data: { name: string; email: string; password: string; organization: string }) =>
-    api.post("/auth/register", data),
+  login: (credentials: object) =>
+    api.post("/login", credentials),
+  register: (data: object) =>
+    api.post("/register", data),
+  getUser: () => api.get("/user"),
   resetPassword: (email: string) =>
-    api.post("/auth/reset-password", { email }),
-  logout: () => api.post("/auth/logout"),
+    api.post("/reset-password", { email }),
+  logout: () => api.post("/logout"),
 };
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────

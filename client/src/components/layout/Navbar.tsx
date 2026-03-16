@@ -135,9 +135,9 @@ export function Navbar() {
                     </Avatar>
                     <div className="hidden md:block text-left">
                         <p className="text-xs font-semibold text-stone-900 leading-none">
-                            {currentUser?.name ?? "Admin"}
+                            {currentUser?.name ?? "Guest User"}
                         </p>
-                        <p className="text-[10px] text-stone-400 mt-1 capitalize">{currentUser?.role ?? "admin"}</p>
+                        <p className="text-[10px] text-stone-400 mt-1 capitalize">{currentUser?.organization ?? "Your Organization"}</p>
                     </div>
                     <ChevronDown className="w-4 h-4 text-stone-400 hidden md:block ml-1" />
                 </button>

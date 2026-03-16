@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Lock, Mail, ArrowRight, User, Building, CheckCircle2 } from "lucide-react";
+import { useAppStore } from "@/store/useAppStore";
+
+import { authApi } from "@/services/api";
 
 const features = [
   "AI-generated phishing simulations",
@@ -25,33 +28,23 @@ export default function SignUp() {
 
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setCurrentUser, setToken } = useAppStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const res = await fetch("http://localhost:8000/api/v1/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          password_confirmation: form.password // Simulate confirmation
-        })
+      const { data } = await authApi.register({
+        name: form.name,
+        email: form.email,
+        organization: form.organization,
+        password: form.password,
+        password_confirmation: form.password // Simulate confirmation
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Erreur lors de l'inscription");
-      }
-
-      const data = await res.json();
-      localStorage.setItem("auth_token", data.token);
+      setToken(data.token);
+      setCurrentUser(data.user);
       
       toast({
         title: "Account created",
@@ -59,10 +52,10 @@ export default function SignUp() {
       });
 
       navigate("/");
-    } catch (error: unknown) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error.response?.data?.message || error.message || "An error occurred",
         variant: "destructive",
       });
     } finally {
