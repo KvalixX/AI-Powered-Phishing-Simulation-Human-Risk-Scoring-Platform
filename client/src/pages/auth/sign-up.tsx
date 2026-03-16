@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Shield, Lock, Mail, ArrowRight, User, Building, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, ArrowRight, User, Building, CheckCircle2 } from "lucide-react";
 
 const features = [
   "AI-generated phishing simulations",
@@ -22,10 +23,51 @@ export default function SignUp() {
     password: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => setLoading(false), 1200);
+    
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          password_confirmation: form.password // Simulate confirmation
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Erreur lors de l'inscription");
+      }
+
+      const data = await res.json();
+      localStorage.setItem("auth_token", data.token);
+      
+      toast({
+        title: "Account created",
+        description: "Your account has been successfully created.",
+      });
+
+      navigate("/");
+    } catch (error: unknown) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -203,7 +245,7 @@ export default function SignUp() {
           <div className="mt-6 text-center">
             <p className="text-sm text-stone-500 dark:text-stone-400">
               Already have an account?{" "}
-              <Link to="/auth/sign-in" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/sign-in" className="text-blue-600 hover:text-blue-700 font-medium">
                 Sign in
               </Link>
             </p>

@@ -156,7 +156,7 @@ export function Navbar() {
                         <div className="my-0.5 border-t border-stone-100" />
                         <button
                             className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] text-red-600 hover:bg-red-50"
-                            onClick={() => { logout(); navigate("/auth/sign-in"); }}
+                            onClick={() => { logout(); navigate("/sign-in"); }}
                         >
                             <LogOut className="w-3 h-3" /> Sign out
                         </button>

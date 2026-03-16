@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,10 +18,47 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => setLoading(false), 1200);
+    
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Identifiants incorrects");
+      }
+
+      const data = await res.json();
+      localStorage.setItem("auth_token", data.token);
+      
+      toast({
+        title: "Welcome back",
+        description: "You have successfully signed in.",
+      });
+
+      // Could also set user state if there is a global context
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Sign in failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -121,7 +159,7 @@ export default function SignIn() {
                 <Label htmlFor="password" className="text-sm font-medium text-stone-700 dark:text-stone-300">
                   Password
                 </Label>
-                <Link to="/auth/reset-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                <Link to="/reset-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
                   Forgot password?
                 </Link>
               </div>
@@ -165,7 +203,7 @@ export default function SignIn() {
           <div className="mt-6 text-center">
             <p className="text-sm text-stone-500 dark:text-stone-400">
               Don't have an account?{" "}
-              <Link to="/auth/sign-up" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/sign-up" className="text-blue-600 hover:text-blue-700 font-medium">
                 Create account
               </Link>
             </p>

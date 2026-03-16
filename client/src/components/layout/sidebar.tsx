@@ -28,8 +28,8 @@ const navItems = [
 ];
 
 const authItems = [
-  { title: "Sign In", href: "/auth/sign-in", icon: LogIn },
-  { title: "Register", href: "/auth/sign-up", icon: UserPlus },
+  { title: "Sign In", href: "/sign-in", icon: LogIn },
+  { title: "Register", href: "/sign-up", icon: UserPlus },
 ];
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {

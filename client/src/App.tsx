@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -83,52 +83,60 @@ function Layout({ children, title, description }: { children: React.ReactNode; t
   );
 }
 
+function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem("auth_token");
+  if (!token) {
+    return <Navigate to="/sign-in" replace />;
+  }
+  return children;
+}
+
 function Router() {
   return (
     <Routes>
-      <Route path="/" element={<Layout><Dashboard /></Layout>} />
+      <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
       <Route path="/campaigns" element={
-        <Layout title="Phishing Campaigns" description="Create and manage phishing simulation campaigns">
+        <PrivateRoute><Layout title="Phishing Campaigns" description="Create and manage phishing simulation campaigns">
           <Campaigns />
-        </Layout>
+        </Layout></PrivateRoute>
       } />
       <Route path="/risk-analytics" element={
-        <Layout title="Risk Analysis" description="Evaluate human risk with dynamic AI scoring">
+        <PrivateRoute><Layout title="Risk Analysis" description="Evaluate human risk with dynamic AI scoring">
           <RiskAnalytics />
-        </Layout>
+        </Layout></PrivateRoute>
       } />
       <Route path="/analytics" element={
-        <Layout title="Analytics & Statistics" description="Advanced analytics and behavioral insights">
+        <PrivateRoute><Layout title="Analytics & Statistics" description="Advanced analytics and behavioral insights">
           <Analytics />
-        </Layout>
+        </Layout></PrivateRoute>
       } />
       <Route path="/training" element={
-        <Layout title="Training" description="Personalized and automated training modules">
+        <PrivateRoute><Layout title="Training" description="Personalized and automated training modules">
           <Training />
-        </Layout>
+        </Layout></PrivateRoute>
       } />
       <Route path="/users" element={
-        <Layout title="Users" description="Manage users and track their threat exposure">
+        <PrivateRoute><Layout title="Users" description="Manage users and track their threat exposure">
           <Users />
-        </Layout>
+        </Layout></PrivateRoute>
       } />
       <Route path="/profile" element={
-        <Layout title="User Risk Profile" description="Individual risk profile and behavior analysis">
+        <PrivateRoute><Layout title="User Risk Profile" description="Individual risk profile and behavior analysis">
           <Profile />
-        </Layout>
+        </Layout></PrivateRoute>
       } />
       <Route path="/profile/:id" element={
-        <Layout title="User Risk Profile" description="Individual risk profile and behavior analysis">
+        <PrivateRoute><Layout title="User Risk Profile" description="Individual risk profile and behavior analysis">
           <Profile />
-        </Layout>
+        </Layout></PrivateRoute>
       } />
       <Route path="/reports" element={
-        <Layout title="Reports" description="Detailed reports and performance analytics">
+        <PrivateRoute><Layout title="Reports" description="Detailed reports and performance analytics">
           <Reports />
-        </Layout>
+        </Layout></PrivateRoute>
       } />
-      <Route path="/auth/sign-in" element={<SignIn />} />
-      <Route path="/auth/sign-up" element={<SignUp />} />
+      <Route path="/sign-in" element={<SignIn />} />
+      <Route path="/sign-up" element={<SignUp />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -136,14 +144,14 @@ function Router() {
 
 function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
           <Router />
         </TooltipProvider>
       </QueryClientProvider>
-    </HashRouter>
+    </BrowserRouter>
   );
 }
 

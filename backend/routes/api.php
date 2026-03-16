@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\BehavioralEventController;
 use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\RLPolicyController;
 use App\Http\Controllers\Api\CampaignMetricsController;
+use App\Http\Controllers\Api\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,36 +21,45 @@ use App\Http\Controllers\Api\CampaignMetricsController;
 
 Route::prefix('v1')->group(function () {
 
-    // ─── CONTACTS ───────────────────────────────────────────────────────────
-    Route::apiResource('contacts', ContactController::class);
-    Route::get('contacts/{contact}/risk-score', [ContactController::class, 'riskScore']);
-    Route::get('contacts/{contact}/behavioral-events', [BehavioralEventController::class, 'byContact']);
-    Route::get('contacts/{contact}/trainings', [TrainingController::class, 'byContact']);
+    // ─── AUTHENTICATION ─────────────────────────────────────────────────────
+    Route::post('register', [AuthController::class, 'register']);
+    Route::post('login', [AuthController::class, 'login']);
 
-    // ─── CAMPAIGNS ──────────────────────────────────────────────────────────
-    Route::apiResource('campaigns', CampaignController::class);
-    Route::get('campaigns/{campaign}/metrics', [CampaignController::class, 'metrics']);
-    Route::get('campaigns/{campaign}/rl-policy', [RLPolicyController::class, 'byCampaign']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('logout', [AuthController::class, 'logout']);
+        Route::get('user', [AuthController::class, 'user']);
 
-    // ─── RISK SCORES ────────────────────────────────────────────────────────
-    Route::get('risk-scores', [UserRiskScoreController::class, 'index']);
-    Route::put('risk-scores/{riskScore}', [UserRiskScoreController::class, 'update']);
+        // ─── CONTACTS ───────────────────────────────────────────────────────────
+        Route::apiResource('contacts', ContactController::class);
+        Route::get('contacts/{contact}/risk-score', [ContactController::class, 'riskScore']);
+        Route::get('contacts/{contact}/behavioral-events', [BehavioralEventController::class, 'byContact']);
+        Route::get('contacts/{contact}/trainings', [TrainingController::class, 'byContact']);
 
-    // ─── BEHAVIORAL EVENTS ──────────────────────────────────────────────────
-    Route::get('behavioral-events', [BehavioralEventController::class, 'index']);
-    Route::post('behavioral-events', [BehavioralEventController::class, 'store']);
+        // ─── CAMPAIGNS ──────────────────────────────────────────────────────────
+        Route::apiResource('campaigns', CampaignController::class);
+        Route::get('campaigns/{campaign}/metrics', [CampaignController::class, 'metrics']);
+        Route::get('campaigns/{campaign}/rl-policy', [RLPolicyController::class, 'byCampaign']);
 
-    // ─── TRAININGS ──────────────────────────────────────────────────────────
-    Route::apiResource('trainings', TrainingController::class)->except(['update']);
-    Route::put('trainings/{training}/complete', [TrainingController::class, 'complete']);
+        // ─── RISK SCORES ────────────────────────────────────────────────────────
+        Route::get('risk-scores', [UserRiskScoreController::class, 'index']);
+        Route::put('risk-scores/{riskScore}', [UserRiskScoreController::class, 'update']);
 
-    // ─── RL POLICIES ────────────────────────────────────────────────────────
-    Route::get('rl-policies', [RLPolicyController::class, 'index']);
-    Route::post('rl-policies', [RLPolicyController::class, 'store']);
-    Route::put('rl-policies/{rlPolicy}', [RLPolicyController::class, 'update']);
+        // ─── BEHAVIORAL EVENTS ──────────────────────────────────────────────────
+        Route::get('behavioral-events', [BehavioralEventController::class, 'index']);
+        Route::post('behavioral-events', [BehavioralEventController::class, 'store']);
 
-    // ─── CAMPAIGN METRICS ───────────────────────────────────────────────────
-    Route::get('campaign-metrics', [CampaignMetricsController::class, 'index']);
-    Route::put('campaign-metrics/{campaignMetrics}', [CampaignMetricsController::class, 'update']);
+        // ─── TRAININGS ──────────────────────────────────────────────────────────
+        Route::apiResource('trainings', TrainingController::class)->except(['update']);
+        Route::put('trainings/{training}/complete', [TrainingController::class, 'complete']);
 
+        // ─── RL POLICIES ────────────────────────────────────────────────────────
+        Route::get('rl-policies', [RLPolicyController::class, 'index']);
+        Route::post('rl-policies', [RLPolicyController::class, 'store']);
+        Route::put('rl-policies/{rlPolicy}', [RLPolicyController::class, 'update']);
+
+        // ─── CAMPAIGN METRICS ───────────────────────────────────────────────────
+        Route::get('campaign-metrics', [CampaignMetricsController::class, 'index']);
+        Route::put('campaign-metrics/{campaignMetrics}', [CampaignMetricsController::class, 'update']);
+
+    }); // End sanctum protected routes
 });
