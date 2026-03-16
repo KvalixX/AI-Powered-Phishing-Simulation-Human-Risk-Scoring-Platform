@@ -1,4 +1,4 @@
-import { apiRequest } from "./queryClient";
+import apiInstance from "@/services/api";
 
 export interface Contact {
     id: number;
@@ -52,25 +52,25 @@ export interface BehavioralEvent {
 export const api = {
     // Campaigns
     getCampaigns: async (): Promise<Campaign[]> => {
-        const res = await apiRequest("GET", "/api/v1/campaigns");
-        return res.json();
+        const { data } = await apiInstance.get("/campaigns");
+        return data;
     },
 
     // Contacts
     getContacts: async (): Promise<Contact[]> => {
-        const res = await apiRequest("GET", "/api/v1/contacts");
-        return res.json();
+        const { data } = await apiInstance.get("/contacts");
+        return data;
     },
 
     // Risk Scores
     getRiskScores: async (): Promise<RiskScore[]> => {
-        const res = await apiRequest("GET", "/api/v1/risk-scores");
-        return res.json();
+        const { data } = await apiInstance.get("/risk-scores");
+        return data;
     },
 
     // Behavioral Events
     createEvent: async (data: Partial<BehavioralEvent>): Promise<BehavioralEvent> => {
-        const res = await apiRequest("POST", "/api/v1/behavioral-events", data);
-        return res.json();
+        const { data: responseData } = await apiInstance.post("/behavioral-events", data);
+        return responseData;
     }
 };
