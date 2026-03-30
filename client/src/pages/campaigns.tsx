@@ -11,7 +11,9 @@ import {
   Play,
   Pause,
   RotateCcw,
-  MoreVertical,
+  Trash2,
+  Edit3,
+  MoreVertical as ActionsIcon,
   Calendar,
   Users,
   Mail,
@@ -23,9 +25,28 @@ import {
   Wand2,
   Sparkles,
   FileText,
-  Trash2,
-  Edit3
+  Download,
+  Printer
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -42,17 +63,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { exportToExcel, exportToPDF } from "@/lib/utils";
 
-import { useCampaigns } from "@/hooks/useApi";
+import { 
+  useCampaigns,
+  useCreateCampaign,
+  useUpdateCampaign,
+  useDeleteCampaign,
+  usePauseCampaign,
+  useResumeCampaign,
+  useEmailTemplates,
+  useDepartments
+} from "@/hooks/useApi";
+import { Campaign } from "@/lib/api";
 
-const aiTemplates = [
-  { id: 1, name: "Email CEO", description: "Simule un email du CEO demandant une action urgente", category: "Social Engineering" },
-  { id: 2, name: "Fausse Facture", description: "Email de facture de fournisseur avec pièce jointe malveillante", category: "Invoice Scam" },
-  { id: 3, name: "Alerte IT", description: "Notification de problème de sécurité nécessitant une connexion", category: "Credential Harvesting" },
-  { id: 4, name: "Mise à jour logiciel", description: "Fausse mise à jour d'application populaire", category: "Malware" },
-  { id: 5, name: "Support technique", description: "Email du support technique demandant des informations", category: "Social Engineering" },
-];
+const aiTemplates: any[] = [];
 
 const difficultyColors = {
   easy: "bg-green-100 text-green-700",
@@ -69,16 +96,90 @@ const statusColors = {
 };
 
 export default function Campaigns() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
   const { data: campaigns = [], isLoading } = useCampaigns();
+  const createCampaign = useCreateCampaign();
+  const updateCampaign = useUpdateCampaign();
+  const deleteCampaign = useDeleteCampaign();
+  const pauseCampaignMutation = usePauseCampaign();
+  const resumeCampaignMutation = useResumeCampaign();
+
+  const { data: templates = [] } = useEmailTemplates();
+  const { data: departments = [] } = useDepartments();
+
+  const [formData, setFormData] = useState<Partial<Campaign>>({
+    name: "",
+    difficulty_level: "moyen",
+    status: "draft"
+  });
+
+  const handleCreate = async () => {
+    try {
+      await createCampaign.mutateAsync(formData);
+      toast({ title: "Succès", description: "Campagne créée avec succès." });
+      setShowCreateDialog(false);
+      setFormData({ name: "", difficulty_level: "moyen", status: "draft" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue." });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedCampaign) return;
+    try {
+      await deleteCampaign.mutateAsync(selectedCampaign.id);
+      toast({ title: "Succès", description: "Campagne supprimée avec succès." });
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue." });
+    }
+  };
+
+  const handleStatusChange = async (campaign: Campaign, newStatus: Campaign['status']) => {
+    try {
+      if (newStatus === 'paused') {
+        await pauseCampaignMutation.mutateAsync(campaign.id);
+      } else if (newStatus === 'active' && campaign.status === 'paused') {
+        await resumeCampaignMutation.mutateAsync(campaign.id);
+      } else {
+        await updateCampaign.mutateAsync({ id: campaign.id, data: { status: newStatus } });
+      }
+      toast({ title: "Succès", description: `Campagne ${newStatus}.` });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue." });
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      if (selectedCampaign) {
+        await updateCampaign.mutateAsync({ id: selectedCampaign.id, data: formData });
+        toast({ title: "Succès", description: "Campagne mise à jour." });
+      } else {
+        await createCampaign.mutateAsync(formData);
+        toast({ title: "Succès", description: "Campagne créée." });
+      }
+      setShowCreateDialog(false);
+      setSelectedCampaign(null);
+      setFormData({ name: "", difficulty_level: "moyen", status: "draft" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue." });
+    }
+  };
 
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = selectedTab === "all" || campaign.status === selectedTab;
-    return matchesSearch && matchesTab;
+    const matchesDifficulty = difficultyFilter === "all" || campaign.difficulty_level === difficultyFilter;
+    return matchesSearch && matchesTab && matchesDifficulty;
   });
 
   return (
@@ -90,10 +191,40 @@ export default function Campaigns() {
           <p className="text-stone-500 mt-1">Gérez vos campagnes de simulation et suivez les résultats</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtrer
+          <Button variant="outline" onClick={() => exportToPDF('app-content', 'campagnes_kira')}>
+            <Download className="w-4 h-4 mr-2" />
+            Exporter en PDF
           </Button>
+          <Button variant="outline" onClick={() => exportToExcel(campaigns, "campagnes")}>
+            <Download className="w-4 h-4 mr-2" />
+            Exporter en Excel
+          </Button>
+          <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+            <SelectTrigger className="w-40">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Difficulté" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les difficultés</SelectItem>
+              <SelectItem value="facile">Facile</SelectItem>
+              <SelectItem value="moyen">Moyen</SelectItem>
+              <SelectItem value="difficile">Difficile</SelectItem>
+              <SelectItem value="expert">Expert</SelectItem>
+            </SelectContent>
+          </Select>
+          {(searchQuery || selectedTab !== "all" || difficultyFilter !== "all") && (
+            <Button 
+              variant="ghost" 
+              className="text-stone-500 hover:text-stone-900"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedTab("all");
+                setDifficultyFilter("all");
+              }}
+            >
+              Réinitialiser
+            </Button>
+          )}
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700">
@@ -105,46 +236,54 @@ export default function Campaigns() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
-                  Créer une Campagne IA
+                  {selectedCampaign ? "Modifier la Campagne" : "Créer une Campagne IA"}
                 </DialogTitle>
                 <DialogDescription>
-                  Générez une campagne de phishing réaliste avec l'intelligence artificielle
+                  {selectedCampaign ? "Modifiez les paramètres de votre campagne." : "Générez une campagne de phishing réaliste avec l'intelligence artificielle"}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 mt-4">
-                <div>
-                  <label className="text-sm font-medium text-stone-700">Nom de la campagne</label>
-                  <Input placeholder="Ex: Campagne Email CEO - Juin 2024" className="mt-1" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-stone-700">Type d'attaque</label>
-                    <Select>
+                    <label className="text-sm font-medium text-stone-700">Nom de la campagne</label>
+                    <Input 
+                      placeholder="Ex: Campagne Email CEO - Juin 2024" 
+                      className="mt-1" 
+                      value={formData.name || ""}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-stone-700">Type d'attaque</label>
+                      <Select>
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Sélectionner..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="email">Email Phishing</SelectItem>
-                        <SelectItem value="credential">Credential Harvesting</SelectItem>
-                        <SelectItem value="invoice">Invoice Scam</SelectItem>
-                        <SelectItem value="malware">Malware Distribution</SelectItem>
+                        {templates.map(t => (
+                          <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-stone-700">Difficulté</label>
+                      <Select 
+                        value={formData.difficulty_level} 
+                        onValueChange={(val: any) => setFormData({...formData, difficulty_level: val})}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="facile">Facile</SelectItem>
+                          <SelectItem value="moyen">Moyen</SelectItem>
+                          <SelectItem value="difficile">Difficile</SelectItem>
+                          <SelectItem value="expert">Expert</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-stone-700">Difficulté</label>
-                    <Select>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="easy">Facile</SelectItem>
-                        <SelectItem value="medium">Moyen</SelectItem>
-                        <SelectItem value="hard">Difficile</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
                 <div>
                   <label className="text-sm font-medium text-stone-700">Groupes cibles</label>
                   <Select>
@@ -153,10 +292,9 @@ export default function Campaigns() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tous les utilisateurs</SelectItem>
-                      <SelectItem value="finance">Finance</SelectItem>
-                      <SelectItem value="rh">RH</SelectItem>
-                      <SelectItem value="it">IT</SelectItem>
-                      <SelectItem value="sales">Ventes</SelectItem>
+                      {departments.map(d => (
+                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -173,9 +311,13 @@ export default function Campaigns() {
                   <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                     Annuler
                   </Button>
-                  <Button className="bg-purple-600 hover:bg-purple-700">
+                  <Button 
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={handleSubmit}
+                    disabled={createCampaign.isPending || updateCampaign.isPending}
+                  >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Générer avec IA
+                    {selectedCampaign ? "Mettre à jour" : "Générer avec IA"}
                   </Button>
                 </div>
               </div>
@@ -273,9 +415,47 @@ export default function Campaigns() {
                       </div>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <ActionsIcon className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => {
+                        setSelectedCampaign(campaign);
+                        setFormData({
+                          name: campaign.name,
+                          difficulty_level: campaign.difficulty_level,
+                          status: campaign.status
+                        });
+                        setShowCreateDialog(true);
+                      }}>
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        Modifier
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(campaign, 'active')}>
+                        <Play className="w-4 h-4 mr-2" />
+                        Activer
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(campaign, 'paused')}>
+                        <Pause className="w-4 h-4 mr-2" />
+                        Pause
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        className="text-red-600"
+                        onClick={() => {
+                          setSelectedCampaign(campaign);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Supprimer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Stats */}
@@ -344,21 +524,52 @@ export default function Campaigns() {
                       </Button>
                     )}
                     {campaign.status === "paused" && (
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleStatusChange(campaign, 'active')}>
                         <Play className="w-4 h-4 mr-1" />
                         Reprendre
                       </Button>
                     )}
                     {campaign.status === "completed" && (
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleStatusChange(campaign, 'active')}>
                         <RotateCcw className="w-4 h-4 mr-1" />
                         Relancer
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm">
-                      <Edit3 className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                    {(campaign.status === "completed" || campaign.status === "active") && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-blue-600 hover:text-blue-700 font-medium"
+                        onClick={() => navigate('/reports')}
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        Voir rapport
+                      </Button>
+                    )}
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedCampaign(campaign);
+                          setFormData({
+                            name: campaign.name,
+                            difficulty_level: campaign.difficulty_level,
+                            status: campaign.status
+                          });
+                          setShowCreateDialog(true);
+                        }}
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => {
+                        setSelectedCampaign(campaign);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -382,6 +593,38 @@ export default function Campaigns() {
           </CardContent>
         </Card>
       )}
+
+      <DeleteDialog 
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleDelete}
+        isPending={deleteCampaign.isPending}
+      />
     </div>
+  );
+}
+
+function DeleteDialog({ open, onOpenChange, onConfirm, isPending }: { open: boolean, onOpenChange: (open: boolean) => void, onConfirm: () => void, isPending: boolean }) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Supprimer la campagne ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Cette action supprimera toutes les statistiques et données associées à cette campagne.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction 
+            className="bg-red-600 hover:bg-red-700"
+            onClick={onConfirm}
+            disabled={isPending}
+          >
+            Supprimer
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

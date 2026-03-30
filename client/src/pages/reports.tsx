@@ -40,70 +40,6 @@ import {
   Legend
 } from "recharts";
 
-const monthlyData = [
-  { month: "Jan", campaigns: 8, clicks: 180, reported: 120, trained: 45 },
-  { month: "Fév", campaigns: 12, clicks: 165, reported: 135, trained: 52 },
-  { month: "Mar", campaigns: 10, clicks: 145, reported: 148, trained: 58 },
-  { month: "Avr", campaigns: 15, clicks: 130, reported: 165, trained: 65 },
-  { month: "Mai", campaigns: 18, clicks: 110, reported: 180, trained: 72 },
-  { month: "Juin", campaigns: 20, clicks: 95, reported: 195, trained: 78 },
-];
-
-const reports = [
-  { 
-    id: 1, 
-    title: "Rapport Global - Q2 2024", 
-    type: "executive",
-    date: "2024-06-30",
-    status: "ready",
-    size: "2.4 MB",
-    author: "Admin"
-  },
-  { 
-    id: 2, 
-    title: "Analyse Risque Département Ventes", 
-    type: "department",
-    date: "2024-06-15",
-    status: "ready",
-    size: "1.8 MB",
-    author: "Sophie Martin"
-  },
-  { 
-    id: 3, 
-    title: "Campagne Email CEO - Juin 2024", 
-    type: "campaign",
-    date: "2024-06-10",
-    status: "ready",
-    size: "3.2 MB",
-    author: "Pierre Durand"
-  },
-  { 
-    id: 4, 
-    title: "Progression Formation - Semaine 24", 
-    type: "training",
-    date: "2024-06-17",
-    status: "generating",
-    size: "--",
-    author: "Marie Lefebvre"
-  },
-  { 
-    id: 5, 
-    title: "Comparatif Mensuel - Mai vs Juin", 
-    type: "analytics",
-    date: "2024-06-01",
-    status: "ready",
-    size: "1.5 MB",
-    author: "Lucas Bernard"
-  },
-];
-
-const kpis = [
-  { label: "Taux de clic", value: "14.2%", change: "-3.5%", trend: "down", good: true },
-  { label: "Taux de signalement", value: "68%", change: "+12%", trend: "up", good: true },
-  { label: "Formation complétée", value: "78%", change: "+8%", trend: "up", good: true },
-  { label: "Score de risque", value: "38/100", change: "-12%", trend: "down", good: true },
-];
-
 const typeColors = {
   executive: "bg-blue-100 text-blue-700",
   department: "bg-purple-100 text-purple-700",
@@ -120,7 +56,113 @@ const typeLabels = {
   analytics: "Analytique"
 };
 
+import { useMemo, useState } from "react";
+import { useReports, useDownloadReport, useCampaigns, useBehavioralEvents, useTrainings, useContacts, useRiskScores } from "@/hooks/useApi";
+import { exportToExcel, exportToPDF, handlePrint } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+
 export default function Reports() {
+  const { toast } = useToast();
+  const { data: reports = [] } = useReports();
+  const downloadReport = useDownloadReport();
+  const { data: campaigns = [] } = useCampaigns();
+  const { data: events = [] } = useBehavioralEvents();
+  const { data: trainings = [] } = useTrainings();
+  const { data: contacts = [] } = useContacts();
+  const { data: riskScores = [] } = useRiskScores();
+  
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  // Combine data for a comprehensive export
+  const allReportsData = useMemo(() => {
+    return reports.map(r => {
+      const campaign = campaigns.find(c => c.id === r.campaign_id);
+      return {
+        ...r,
+        campaign_name: campaign?.name || 'N/A',
+        total_recipients: campaign?.recipients || 0,
+        clicks: events.filter(e => e.campaign_id === r.campaign_id && e.event_type === 'click').length
+      };
+    });
+  }, [reports, campaigns, events]);
+
+  const filteredReports = useMemo(() => {
+    return allReportsData.filter(report => {
+      const matchesSearch = report.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = typeFilter === "all" || report.type === typeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [allReportsData, searchQuery, typeFilter]);
+
+  const dynamicKPIs = useMemo(() => {
+    if (events.length === 0 && trainings.length === 0) return [];
+    
+    const clickCount = events.filter(e => e.event_type === 'click').length;
+    const reportCount = events.filter(e => e.event_type === 'report').length;
+    
+    // Simulate some real rate, if no events pretend a low baseline
+    const clickRate = events.length > 0 ? ((clickCount / events.length) * 100).toFixed(1) : "0.0";
+    const reportRate = events.length > 0 ? ((reportCount / events.length) * 100).toFixed(1) : "0.0";
+    
+    const completedTrainings = trainings.filter(t => t.completed).length;
+    const trainingRate = trainings.length > 0 ? Math.round((completedTrainings / trainings.length) * 100) : 0;
+    
+    const avgScore = riskScores.length > 0 ? Math.round(riskScores.reduce((acc, curr) => acc + curr.score, 0) / riskScores.length) : 0;
+
+    return [
+      { label: "Taux de clic", value: `${clickRate}%`, change: "En direct", trend: clickRate > "10" ? "up" : "down", good: clickRate <= "10" },
+      { label: "Taux de signalement", value: `${reportRate}%`, change: "En direct", trend: reportRate > "15" ? "up" : "down", good: reportRate > "15" },
+      { label: "Formation complétée", value: `${trainingRate}%`, change: "En direct", trend: "up", good: trainingRate > 50 },
+      { label: "Score de risque", value: `${avgScore}/100`, change: "En direct", trend: avgScore > 50 ? "up" : "down", good: avgScore <= 50 },
+    ];
+  }, [events, trainings, riskScores]);
+
+  const dynamicMonthlyData = useMemo(() => {
+    if (events.length === 0 && campaigns.length === 0) return [];
+
+    const monthMap = new Map();
+    // Default 6 months prior
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const mStr = d.toLocaleString('fr-FR', { month: 'short' });
+      const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+      monthMap.set(monthKey, { month: mStr.charAt(0).toUpperCase() + mStr.slice(1), campaigns: 0, clicks: 0, reported: 0, trained: 0, dateKey: monthKey });
+    }
+
+    events.forEach(e => {
+      const d = new Date(e.event_timestamp || Date.now());
+      const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+      if (monthMap.has(monthKey)) {
+        const entry = monthMap.get(monthKey);
+        if (e.event_type === 'click') entry.clicks++;
+        if (e.event_type === 'report') entry.reported++;
+      }
+    });
+
+    campaigns.forEach(c => {
+      const d = new Date(c.started_at || Date.now());
+      const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+      if (monthMap.has(monthKey)) {
+        monthMap.get(monthKey).campaigns++;
+      }
+    });
+
+    trainings.forEach(t => {
+      if (t.completed) {
+        const d = new Date(t.updated_at);
+        const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+        if (monthMap.has(monthKey)) monthMap.get(monthKey).trained++;
+      }
+    });
+
+    return Array.from(monthMap.values());
+  }, [events, campaigns, trainings]);
+
   return (
     <div className="h-full overflow-y-auto p-6 custom-scrollbar">
       {/* Header */}
@@ -130,15 +172,37 @@ export default function Reports() {
           <p className="text-stone-500 mt-1">Générez et consultez des rapports détaillés sur vos campagnes</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtrer
-          </Button>
-          <Button variant="outline">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 w-4 h-4" />
+            <Input 
+              placeholder="Rechercher un rapport..." 
+              className="pl-10 w-64"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-40">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les types</SelectItem>
+              <SelectItem value="executive">Exécutif</SelectItem>
+              <SelectItem value="department">Département</SelectItem>
+              <SelectItem value="campaign">Campagne</SelectItem>
+              <SelectItem value="training">Formation</SelectItem>
+              <SelectItem value="analytics">Analytique</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={handlePrint}>
             <Printer className="w-4 h-4 mr-2" />
             Imprimer
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => toast({ title: "Génération en cours", description: "Votre rapport est en train d'être généré..." })}
+          >
             <FileText className="w-4 h-4 mr-2" />
             Générer Rapport
           </Button>
@@ -147,7 +211,7 @@ export default function Reports() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {kpis.map((kpi, index) => (
+        {dynamicKPIs.map((kpi, index) => (
           <Card key={index} className="border-stone-200">
             <CardContent className="p-6">
               <p className="text-sm text-stone-500 mb-2">{kpi.label}</p>
@@ -183,7 +247,7 @@ export default function Reports() {
                   <SelectItem value="1year">1 an</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => exportToExcel(dynamicMonthlyData, "performance_6_mois")}>
                 <Download className="w-4 h-4" />
               </Button>
             </div>
@@ -191,7 +255,7 @@ export default function Reports() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={monthlyData}>
+            <AreaChart data={dynamicMonthlyData}>
               <defs>
                 <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
@@ -257,7 +321,7 @@ export default function Reports() {
                     </tr>
                   </thead>
                   <tbody>
-                    {reports.map((report) => (
+                    {filteredReports.map((report) => (
                       <tr key={report.id} className="border-b border-stone-100 hover:bg-stone-50">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
@@ -266,7 +330,7 @@ export default function Reports() {
                             </div>
                             <div>
                               <p className="font-medium text-stone-900">{report.title}</p>
-                              <p className="text-xs text-stone-500">ID: RPT-{report.id.toString().padStart(4, '0')}</p>
+                              <p className="text-xs text-stone-500">ID: RPT-{report.id}</p>
                             </div>
                           </div>
                         </td>
@@ -278,10 +342,12 @@ export default function Reports() {
                         <td className="py-3 px-4 text-center text-sm text-stone-600">
                           <div className="flex items-center justify-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {report.date}
+                            {new Date(report.date).toLocaleDateString()}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-center text-sm text-stone-600">{report.author}</td>
+                        <td className="py-3 px-4 text-center text-sm text-stone-600">
+                          {report.author?.name || 'Admin'}
+                        </td>
                         <td className="py-3 px-4 text-center text-sm text-stone-600">{report.size}</td>
                         <td className="py-3 px-4 text-center">
                           {report.status === "ready" ? (
@@ -301,7 +367,8 @@ export default function Reports() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              disabled={report.status !== "ready"}
+                              disabled={report.status !== "ready" || downloadReport.isPending}
+                              onClick={() => downloadReport.mutate(report.id)}
                             >
                               <Download className="w-4 h-4" />
                             </Button>
@@ -377,7 +444,7 @@ export default function Reports() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={monthlyData}>
+            <BarChart data={dynamicMonthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
               <YAxis stroke="#6b7280" fontSize={12} />
@@ -399,21 +466,17 @@ export default function Reports() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="justify-start">
+            <Button variant="outline" className="justify-start" onClick={() => exportToPDF('app-content', 'rapport_phishing_complet')}>
               <Download className="w-4 h-4 mr-2" />
               Exporter en PDF
             </Button>
-            <Button variant="outline" className="justify-start">
+            <Button variant="outline" className="justify-start" onClick={() => exportToExcel(filteredReports, "rapports_phishing_filtres")}>
               <Download className="w-4 h-4 mr-2" />
               Exporter en Excel
             </Button>
             <Button variant="outline" className="justify-start">
               <Share2 className="w-4 h-4 mr-2" />
               Partager par Email
-            </Button>
-            <Button variant="outline" className="justify-start">
-              <Printer className="w-4 h-4 mr-2" />
-              Imprimer
             </Button>
           </div>
         </CardContent>

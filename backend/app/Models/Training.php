@@ -12,16 +12,17 @@ class Training extends Model
 
     protected $fillable = [
         'contact_id',
-        'type',
-        'content',
-        'recommended_by',
-        'completed',
-        'impact',
+        'training_module_id',
+        'status',
+        'assigned_at',
+        'completed_at',
+        'score',
     ];
 
     protected $casts = [
-        'completed' => 'boolean',
-        'impact' => 'float',
+        'assigned_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'score' => 'float',
     ];
 
     public function contact(): BelongsTo

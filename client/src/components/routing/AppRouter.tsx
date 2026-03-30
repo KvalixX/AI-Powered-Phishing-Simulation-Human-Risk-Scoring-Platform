@@ -8,6 +8,7 @@ import Users from "@/pages/users";
 import Reports from "@/pages/reports";
 import Analytics from "@/pages/analytics";
 import Profile from "@/pages/profile";
+import Settings from "@/pages/settings";
 import SignIn from "@/pages/auth/sign-in";
 import SignUp from "@/pages/auth/sign-up";
 import NotFound from "@/pages/not-found";
@@ -59,6 +60,11 @@ export function AppRouter() {
       <Route path="/profile/:id" element={
         <PrivateRoute><AppLayout title="User Risk Profile" description="Individual risk profile and behavior analysis">
           <Profile />
+        </AppLayout></PrivateRoute>
+      } />
+      <Route path="/settings" element={
+        <PrivateRoute><AppLayout title="Settings" description="Manage your account preferences and global settings">
+          <Settings />
         </AppLayout></PrivateRoute>
       } />
       <Route path="/reports" element={

@@ -10,11 +10,11 @@ return new class extends Migration {
         Schema::create('trainings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('contact_id')->constrained()->cascadeOnDelete();
-            $table->string('type')->comment('video, article, quiz');
-            $table->text('content')->comment('URL or content of the training material');
-            $table->string('recommended_by')->nullable()->comment('AI model that recommended this training');
-            $table->boolean('completed')->default(false);
-            $table->float('impact')->nullable()->comment('Score change after completing the training');
+            $table->foreignId('training_module_id')->constrained()->cascadeOnDelete();
+            $table->string('status')->default('assigned'); // assigned, in_progress, completed
+            $table->timestamp('assigned_at')->useCurrent();
+            $table->timestamp('completed_at')->nullable();
+            $table->float('score')->nullable();
             $table->timestamps();
         });
     }

@@ -16,7 +16,10 @@ export interface CurrentUser {
     email: string;
     role: "admin" | "manager" | "user";
     department: string;
+    position?: string;
     organization?: string;
+    seniority?: string;
+    language?: string;
     avatar?: string;
 }
 
