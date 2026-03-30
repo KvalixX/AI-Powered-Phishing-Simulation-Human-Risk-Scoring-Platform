@@ -30,13 +30,24 @@ class CampaignController extends Controller
             'ended_at' => 'nullable|date',
         ]);
 
-        $validated['user_id'] = auth()->id() ?? 1; // Default to user 1 for now
+        $validated['user_id'] = auth()->id() ?? 1;
         $campaign = Campaign::create($validated);
 
-        // Auto-create metrics and RL policy records
-        CampaignMetrics::create(['campaign_id' => $campaign->id]);
+        // Auto-create initial metrics
+        CampaignMetrics::create([
+            'campaign_id' => $campaign->id,
+            'ctr' => 0,
+            'precision' => 0,
+            'auc_roc' => 0,
+        ]);
+
         if ($campaign->rl_enabled) {
-            RLPolicy::create(['campaign_id' => $campaign->id, 'rewards' => 0]);
+            RLPolicy::create([
+                'campaign_id' => $campaign->id,
+                'rewards' => 0,
+                'campaign_params' => ['initial' => true],
+                'state' => ['iteration' => 0]
+            ]);
         }
 
         return response()->json($campaign->load(['metrics', 'rlPolicy']), 201);
@@ -71,5 +82,17 @@ class CampaignController extends Controller
     public function metrics(Campaign $campaign): JsonResponse
     {
         return response()->json($campaign->metrics ?? ['message' => 'No metrics yet']);
+    }
+
+    public function pause(Campaign $campaign): JsonResponse
+    {
+        $campaign->update(['status' => 'paused']);
+        return response()->json(['message' => 'Campagne mise en pause', 'campaign' => $campaign]);
+    }
+
+    public function resume(Campaign $campaign): JsonResponse
+    {
+        $campaign->update(['status' => 'active']);
+        return response()->json(['message' => 'Campagne reprise', 'campaign' => $campaign]);
     }
 }

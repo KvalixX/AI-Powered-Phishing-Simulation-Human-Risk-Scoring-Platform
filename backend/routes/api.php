@@ -9,6 +9,10 @@ use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\RLPolicyController;
 use App\Http\Controllers\Api\CampaignMetricsController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\TrainingModuleController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\EmailTemplateController;
+use App\Http\Controllers\Api\DepartmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +32,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('user', [AuthController::class, 'user']);
+        Route::put('user', [AuthController::class, 'update']);
 
         // ─── CONTACTS ───────────────────────────────────────────────────────────
         Route::apiResource('contacts', ContactController::class);
@@ -39,6 +44,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('campaigns', CampaignController::class);
         Route::get('campaigns/{campaign}/metrics', [CampaignController::class, 'metrics']);
         Route::get('campaigns/{campaign}/rl-policy', [RLPolicyController::class, 'byCampaign']);
+        Route::post('campaigns/{campaign}/pause', [CampaignController::class, 'pause']);
+        Route::post('campaigns/{campaign}/resume', [CampaignController::class, 'resume']);
 
         // ─── RISK SCORES ────────────────────────────────────────────────────────
         Route::get('risk-scores', [UserRiskScoreController::class, 'index']);
@@ -60,6 +67,13 @@ Route::prefix('v1')->group(function () {
         // ─── CAMPAIGN METRICS ───────────────────────────────────────────────────
         Route::get('campaign-metrics', [CampaignMetricsController::class, 'index']);
         Route::put('campaign-metrics/{campaignMetrics}', [CampaignMetricsController::class, 'update']);
+
+        // ─── NEW MODULES ────────────────────────────────────────────────────────
+        Route::apiResource('training-modules', TrainingModuleController::class);
+        Route::apiResource('reports', ReportController::class);
+        Route::get('reports/{report}/download', [ReportController::class, 'download']);
+        Route::apiResource('email-templates', EmailTemplateController::class);
+        Route::apiResource('departments', DepartmentController::class);
 
     }); // End sanctum protected routes
 });

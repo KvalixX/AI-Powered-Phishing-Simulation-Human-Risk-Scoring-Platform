@@ -18,9 +18,25 @@ import {
   Zap,
   FileText,
   MoreVertical,
-  Plus
+  Plus,
+  Trash2,
+  Mail,
+  Lock,
+  Smartphone,
+  Download,
+  Printer
 } from "lucide-react";
-import { 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -28,7 +44,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTrainings, useCreateTraining, useDeleteTraining, useContacts, useRiskScores } from "@/hooks/useApi";
+import { useToast } from "@/hooks/use-toast";
+import { exportToExcel, exportToPDF } from "@/lib/utils";
 
 const trainingModules = [
   { 
@@ -99,82 +119,122 @@ const trainingModules = [
   },
 ];
 
-import { Mail, Lock, Smartphone } from "lucide-react";
-
-const assignedTrainings = [
-  { 
-    id: 1, 
-    user: "Sophie Martin", 
-    email: "sophie.martin@company.com",
-    module: "Ingénierie sociale avancée", 
-    assigned: "2024-06-10",
-    due: "2024-06-17",
-    progress: 35,
-    status: "in_progress",
-    priority: "high"
-  },
-  { 
-    id: 2, 
-    user: "Pierre Durand", 
-    email: "pierre.durand@company.com",
-    module: "Identifier les emails de phishing", 
-    assigned: "2024-06-08",
-    due: "2024-06-15",
-    progress: 0,
-    status: "not_started",
-    priority: "high"
-  },
-  { 
-    id: 3, 
-    user: "Marie Lefebvre", 
-    email: "marie.lefebvre@company.com",
-    module: "Réponse aux incidents", 
-    assigned: "2024-06-05",
-    due: "2024-06-12",
-    progress: 100,
-    status: "completed",
-    priority: "medium"
-  },
-  { 
-    id: 4, 
-    user: "Lucas Bernard", 
-    email: "lucas.bernard@company.com",
-    module: "Protection des credentials", 
-    assigned: "2024-06-03",
-    due: "2024-06-10",
-    progress: 78,
-    status: "in_progress",
-    priority: "medium"
-  },
-];
-
-const learningStats = [
-  { label: "Taux de complétion", value: 68, target: 80 },
-  { label: "Score moyen", value: 7.2, target: 8.0 },
-  { label: "Temps moyen", value: "18min", target: "15min" },
-  { label: "Certifiés", value: 245, target: 300 },
-];
-
-const leaderboard = [
-  { rank: 1, name: "Emma Petit", department: "IT", score: 98, completed: 12 },
-  { rank: 2, name: "Jean Dupont", department: "Finance", score: 95, completed: 11 },
-  { rank: 3, name: "Claire Moreau", department: "RH", score: 92, completed: 10 },
-  { rank: 4, name: "Alexandre Roux", department: "IT", score: 89, completed: 10 },
-  { rank: 5, name: "Julie Blanc", department: "Marketing", score: 87, completed: 9 },
-];
-
 export default function Training() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null);
+
+  const { data: trainings = [] } = useTrainings();
+  const { data: contacts = [] } = useContacts();
+  const { data: riskScores = [] } = useRiskScores();
+
+  const createTraining = useCreateTraining();
+  const deleteTraining = useDeleteTraining();
+
+  const handleAutoAssign = async () => {
+    try {
+      const atRiskUsers = [...contacts]
+        .map(c => ({ ...c, risk: riskScores.find(r => r.contact_id === c.id)?.score || 0 }))
+        .sort((a, b) => b.risk - a.risk)
+        .slice(0, 3);
+
+      for (const user of atRiskUsers) {
+        await createTraining.mutateAsync({
+          contact_id: user.id,
+          content: "Ingénierie sociale avancée",
+          completed: false,
+          score: 0
+        });
+      }
+
+      toast({ title: "Succès", description: "Formations assignées aux utilisateurs à risque." });
+      setShowAssignDialog(false);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue." });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedTrainingId) return;
+    try {
+      await deleteTraining.mutateAsync(selectedTrainingId);
+      toast({ title: "Succès", description: "Assignation supprimée." });
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue." });
+    }
+  };
+
+  const dynamicAssignedTrainings = useMemo(() => {
+    if (trainings.length === 0) return [];
+    return trainings.map(t => {
+      const c = contacts.find(contact => contact.id === t.contact_id);
+      return {
+        id: t.id,
+        user: c ? `${c.first_name} ${c.last_name}` : "Inconnu",
+        email: c ? c.email : "N/A",
+        module: t.content,
+        assigned: t.created_at ? new Date(t.created_at).toISOString().split('T')[0] : "N/A",
+        due: t.created_at ? new Date(new Date(t.created_at).getTime() + 7*24*60*60*1000).toISOString().split('T')[0] : "N/A",
+        progress: t.completed ? 100 : 0,
+        status: t.completed ? "completed" : "not_started",
+        priority: t.completed ? "medium" : "high"
+      };
+    }).sort((a,b) => a.progress - b.progress).slice(0, 10);
+  }, [trainings, contacts]);
+
+  const dynamicLearningStats = useMemo(() => {
+    const totalTrainings = trainings.length;
+    const completed = trainings.filter(t => t.completed).length;
+    const completionRate = totalTrainings > 0 ? Math.round((completed / totalTrainings) * 100) : 0;
+    const certifiedUserIds = new Set(trainings.filter(t => t.completed).map(t => t.contact_id));
+
+    return [
+      { label: "Taux de complétion", value: completionRate, target: 80 },
+      { label: "Score moyen", value: 0, target: 8.0 },
+      { label: "Temps moyen", value: "0min", target: "15min" },
+      { label: "Certifiés", value: certifiedUserIds.size, target: contacts.length || 0 },
+    ];
+  }, [trainings, contacts]);
+
+  const dynamicLeaderboard = useMemo(() => {
+    if (contacts.length === 0 || trainings.length === 0) return [];
+    
+    const userScores = contacts.map(c => {
+      const userTrainings = trainings.filter(t => t.contact_id === c.id);
+      const completedCount = userTrainings.filter(t => t.completed).length;
+      const rs = riskScores.find(r => r.contact_id === c.id)?.score || 50;
+      const score = Math.min(100, Math.max(0, 100 - rs + (completedCount * 10)));
+      return {
+        name: `${c.first_name} ${c.last_name}`,
+        department: c.department || "Général",
+        score,
+        completed: completedCount
+      };
+    });
+    
+    return userScores.sort((a,b) => b.score - a.score).slice(0, 5).map((u, i) => ({...u, rank: i+1}));
+  }, [contacts, trainings, riskScores]);
 
   return (
     <div className="h-full overflow-y-auto p-6 custom-scrollbar">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-stone-900">Formation & Sensibilisation</h1>
           <p className="text-stone-500 mt-1">Modules de formation personnalisés et auto-adaptatifs</p>
         </div>
-        <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => exportToPDF('app-content', 'formations_kira')}>
+            <Download className="w-4 h-4 mr-2" />
+            PDF
+          </Button>
+          <Button variant="outline" onClick={() => exportToExcel(trainings, "formations")}>
+            <Download className="w-4 h-4 mr-2" />
+            Excel
+          </Button>
+          <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
           <DialogTrigger asChild>
             <Button className="bg-green-600 hover:bg-green-700">
               <Plus className="w-4 h-4 mr-2" />
@@ -198,14 +258,18 @@ export default function Training() {
                   <span className="font-medium text-green-900">Recommandation IA</span>
                 </div>
                 <p className="text-sm text-green-700">
-                  Basé sur leur profil de risque, 5 utilisateurs devraient suivre "Ingénierie sociale avancée"
+                  Basé sur leur profil de risque, les utilisateurs les plus vulnérables seront ciblés.
                 </p>
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
                   Annuler
                 </Button>
-                <Button className="bg-green-600 hover:bg-green-700">
+                <Button 
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={handleAutoAssign}
+                  disabled={createTraining.isPending}
+                >
                   Assigner automatiquement
                 </Button>
               </div>
@@ -213,10 +277,10 @@ export default function Training() {
           </DialogContent>
         </Dialog>
       </div>
+    </div>
 
-      {/* Learning Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {learningStats.map((stat, index) => (
+        {dynamicLearningStats.map((stat, index) => (
           <Card key={index} className="border-stone-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
@@ -237,7 +301,6 @@ export default function Training() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Training Modules */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-stone-200">
             <CardHeader>
@@ -249,7 +312,6 @@ export default function Training() {
                 <div className="flex gap-2">
                   <Badge variant="outline" className="cursor-pointer">Tous</Badge>
                   <Badge variant="outline" className="cursor-pointer">Recommandés IA</Badge>
-                  <Badge variant="outline" className="cursor-pointer">Requis</Badge>
                 </div>
               </div>
             </CardHeader>
@@ -295,13 +357,6 @@ export default function Training() {
                               {module.difficulty}
                             </Badge>
                           </div>
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between text-xs mb-1">
-                              <span className="text-stone-500">Taux de complétion</span>
-                              <span className="font-medium">{module.completion}%</span>
-                            </div>
-                            <Progress value={module.completion} className="h-1.5" />
-                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -311,7 +366,6 @@ export default function Training() {
             </CardContent>
           </Card>
 
-          {/* Assigned Trainings */}
           <Card className="border-stone-200">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -327,13 +381,12 @@ export default function Training() {
                       <th className="text-left py-3 px-4 text-sm font-medium text-stone-700">Utilisateur</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-stone-700">Module</th>
                       <th className="text-center py-3 px-4 text-sm font-medium text-stone-700">Priorité</th>
-                      <th className="text-center py-3 px-4 text-sm font-medium text-stone-700">Échéance</th>
                       <th className="text-center py-3 px-4 text-sm font-medium text-stone-700">Progression</th>
                       <th className="text-right py-3 px-4 text-sm font-medium text-stone-700">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {assignedTrainings.map((training) => (
+                    {dynamicAssignedTrainings.map((training) => (
                       <tr key={training.id} className="border-b border-stone-100 hover:bg-stone-50">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
@@ -357,21 +410,23 @@ export default function Training() {
                             {training.priority === "high" ? "Haute" : "Moyenne"}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4 text-center text-sm text-stone-600">
-                          <div className="flex items-center justify-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {training.due}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 text-center">
                           <div className="flex items-center gap-2">
                             <Progress value={training.progress} className="flex-1 h-2" />
                             <span className="text-xs text-stone-500 w-10">{training.progress}%</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <Button size="sm" variant="ghost">
-                            <MoreVertical className="w-4 h-4" />
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-red-600"
+                            onClick={() => {
+                              setSelectedTrainingId(training.id);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </td>
                       </tr>
@@ -383,9 +438,7 @@ export default function Training() {
           </Card>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Leaderboard */}
           <Card className="border-stone-200">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -395,7 +448,7 @@ export default function Training() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {leaderboard.map((user, index) => (
+                {dynamicLeaderboard.map((user, index) => (
                   <div key={index} className="flex items-center gap-3 p-3 rounded-lg hover:bg-stone-50">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                       user.rank === 1 ? "bg-yellow-100 text-yellow-700" :
@@ -424,66 +477,46 @@ export default function Training() {
             </CardContent>
           </Card>
 
-          {/* AI Recommendations */}
-          <Card className="border-stone-200 bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Brain className="w-5 h-5 text-purple-600" />
-                Recommandations IA
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="p-3 bg-white rounded-lg border border-purple-100">
-                  <div className="flex items-start gap-2">
-                    <Star className="w-4 h-4 text-purple-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">Module prioritaire</p>
-                      <p className="text-xs text-stone-500 mt-1">
-                        "Ingénierie sociale avancée" pour le département Ventes
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-3 bg-white rounded-lg border border-purple-100">
-                  <div className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-yellow-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">Action rapide</p>
-                      <p className="text-xs text-stone-500 mt-1">
-                        3 utilisateurs à risque élevé n'ont pas commencé leur formation
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
           <Card className="border-stone-200">
             <CardHeader>
               <CardTitle className="text-lg">Actions Rapides</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/reports')}>
                   <FileText className="w-4 h-4 mr-2" />
-                  Générer rapport de formation
+                  Générer rapport
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/campaigns')}>
                   <Play className="w-4 h-4 mr-2" />
                   Démarrer simulation
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Users className="w-4 h-4 mr-2" />
-                  Voir progrès équipe
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer l'assignation ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action retirera le module de formation de la liste de l'utilisateur.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDelete}
+              disabled={deleteTraining.isPending}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

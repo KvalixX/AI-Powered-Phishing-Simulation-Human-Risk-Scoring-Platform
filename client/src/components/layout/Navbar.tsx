@@ -45,7 +45,7 @@ export function Navbar() {
     const navigate = useNavigate();
 
     return (
-        <div className="h-14 border-b border-stone-200 bg-white flex items-center px-4 gap-4 relative z-30">
+        <div className="h-14 border-b border-stone-200 bg-white flex items-center px-4 gap-4 relative z-30 no-print">
             {/* Search */}
             <div className="relative flex-1 max-w-md hidden md:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
@@ -144,13 +144,10 @@ export function Navbar() {
 
                 {userMenuOpen && (
                     <div className="absolute right-0 top-9 w-40 bg-white border border-stone-200 rounded-lg shadow-xl z-50 py-1">
-                        <button
+                        <button 
                             className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] text-stone-700 hover:bg-stone-50"
-                            onClick={() => { setUserMenuOpen(false); navigate("/profile"); }}
+                            onClick={() => { setUserMenuOpen(false); navigate("/settings"); }}
                         >
-                            <User className="w-3 h-3" /> My Profile
-                        </button>
-                        <button className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] text-stone-700 hover:bg-stone-50">
                             <Settings className="w-3 h-3" /> Settings
                         </button>
                         <div className="my-0.5 border-t border-stone-100" />

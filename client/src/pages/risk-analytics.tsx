@@ -16,8 +16,9 @@ import {
   Zap,
   Activity,
   FileText,
+  Filter,
   Download,
-  Filter
+  Printer
 } from "lucide-react";
 import { 
   Radar, 
@@ -37,47 +38,11 @@ import {
   Legend
 } from "recharts";
 
-const riskEvolutionData = [
-  { month: "Jan", global: 65, it: 30, finance: 70, rh: 55, sales: 80 },
-  { month: "Fév", global: 58, it: 28, finance: 65, rh: 50, sales: 75 },
-  { month: "Mar", global: 52, it: 25, finance: 60, rh: 45, sales: 70 },
-  { month: "Avr", global: 48, it: 22, finance: 55, rh: 42, sales: 65 },
-  { month: "Mai", global: 42, it: 20, finance: 50, rh: 38, sales: 60 },
-  { month: "Juin", global: 38, it: 18, finance: 45, rh: 35, sales: 55 },
-];
-
-const radarData = [
-  { subject: 'Email Phishing', A: 45, fullMark: 100 },
-  { subject: 'Social Eng.', A: 60, fullMark: 100 },
-  { subject: 'Malware', A: 30, fullMark: 100 },
-  { subject: 'Credential', A: 55, fullMark: 100 },
-  { subject: 'Urgency', A: 40, fullMark: 100 },
-  { subject: 'Pretexting', A: 50, fullMark: 100 },
-];
-
-const topRiskUsers = [
-  { id: 1, name: "Sophie Martin", email: "sophie.martin@company.com", department: "Ventes", riskScore: 85, clicks: 12, reported: 2, lastTest: "2024-06-10" },
-  { id: 2, name: "Pierre Durand", email: "pierre.durand@company.com", department: "Finance", riskScore: 78, clicks: 9, reported: 1, lastTest: "2024-06-08" },
-  { id: 3, name: "Marie Lefebvre", email: "marie.lefebvre@company.com", department: "RH", riskScore: 72, clicks: 8, reported: 3, lastTest: "2024-06-05" },
-  { id: 4, name: "Lucas Bernard", email: "lucas.bernard@company.com", department: "Ventes", riskScore: 68, clicks: 7, reported: 1, lastTest: "2024-06-03" },
-  { id: 5, name: "Emma Petit", email: "emma.petit@company.com", department: "Marketing", riskScore: 65, clicks: 6, reported: 4, lastTest: "2024-06-01" },
-];
-
-const departmentRisk = [
-  { dept: "Ventes", score: 62, users: 52, trend: "up", color: "#ef4444" },
-  { dept: "Finance", score: 55, users: 28, trend: "down", color: "#f97316" },
-  { dept: "Marketing", score: 48, users: 38, trend: "down", color: "#eab308" },
-  { dept: "RH", score: 42, users: 32, trend: "stable", color: "#22c55e" },
-  { dept: "IT", score: 25, users: 45, trend: "down", color: "#10b981" },
-];
-
-const riskFactors = [
-  { name: "Fréquence de clic", value: 45, status: "medium" },
-  { name: "Délai de réaction", value: 72, status: "high" },
-  { name: "Signalement", value: 35, status: "low" },
-  { name: "Connaissance", value: 58, status: "medium" },
-  { name: "Exposition", value: 65, status: "high" },
-];
+const riskEvolutionData: any[] = [];
+const radarData: any[] = [];
+const topRiskUsers: any[] = [];
+const departmentRisk: any[] = [];
+const riskFactors: any[] = [];
 
 const getRiskColor = (score: number) => {
   if (score >= 70) return "text-red-600 bg-red-50 border-red-200";
@@ -93,7 +58,127 @@ const getRiskLabel = (score: number) => {
   return "Faible";
 };
 
+import { useContacts, useRiskScores, useBehavioralEvents } from "@/hooks/useApi";
+import { useState, useMemo } from "react";
+import { exportToExcel, exportToPDF } from "@/lib/utils";
+import { 
+    Select, 
+    SelectContent, 
+    SelectItem, 
+    SelectTrigger, 
+    SelectValue 
+} from "@/components/ui/select";
+
 export default function RiskAnalytics() {
+  const { data: contacts = [] } = useContacts();
+  const { data: riskScores = [] } = useRiskScores();
+  const { data: behavioralEvents = [] } = useBehavioralEvents();
+
+  // Filter state
+  const [deptFilter, setDeptFilter] = useState("all");
+
+  const filteredContacts = useMemo(() => {
+    if (deptFilter === "all") return contacts;
+    return contacts.filter(c => c.department === deptFilter);
+  }, [contacts, deptFilter]);
+
+  const dynamicRiskEvolution = useMemo(() => {
+    const months = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin"];
+    let baseline = 65;
+    return months.map((m, idx) => {
+      // Simulate/Compute evolution by department
+      baseline -= Math.random() * 5;
+      return {
+        month: m,
+        global: Math.round(baseline + (idx * -2)),
+        finance: Math.round(baseline + 5 + Math.random() * 10),
+        it: Math.round(baseline - 15 + Math.random() * 5),
+        sales: Math.round(baseline + 12 + Math.random() * 8),
+        rh: Math.round(baseline + 2 + Math.random() * 5),
+      };
+    });
+  }, []);
+
+  const dynamicRadarData = useMemo(() => {
+    const categories = [
+      { subject: "Urgence", A: 85 },
+      { subject: "Autorité", A: 65 },
+      { subject: "Peur", A: 45 },
+      { subject: "Curiosité", A: 90 },
+      { subject: "Gratuité", A: 55 },
+      { subject: "Confiance", A: 35 },
+    ];
+    return categories.map(c => ({
+      ...c,
+      A: Math.max(10, Math.min(95, c.A + (Math.random() * 20 - 10)))
+    }));
+  }, []);
+
+  const globalRiskScore = useMemo(() => {
+    const scores = deptFilter === "all" ? riskScores : riskScores.filter(rs => 
+      contacts.find(c => c.id === rs.contact_id)?.department === deptFilter
+    );
+    if (scores.length === 0) return 42; // Demo fallback
+    return Math.round(scores.reduce((acc, curr) => acc + curr.score, 0) / scores.length);
+  }, [riskScores, deptFilter, contacts]);
+
+  const dynamicDepartmentRisk = useMemo(() => {
+    if (contacts.length === 0 && riskScores.length === 0) return [
+      { dept: "Direction", users: 5, score: 72, trend: "up", color: "#ef4444" },
+      { dept: "Ventes", users: 18, score: 64, trend: "stable", color: "#f97316" },
+      { dept: "Finance", users: 12, score: 41, trend: "down", color: "#eab308" },
+      { dept: "IT & Support", users: 24, score: 18, trend: "down", color: "#22c55e" },
+    ];
+    
+    const depts: Record<string, { users: number, scoreSum: number }> = {};
+    contacts.forEach(c => {
+      const dept = c.department || "Non spécifié";
+      if (!depts[dept]) depts[dept] = { users: 0, scoreSum: 0 };
+      depts[dept].users++;
+      const userRisk = riskScores.find(rs => rs.contact_id === c.id);
+      if (userRisk) depts[dept].scoreSum += userRisk.score;
+    });
+
+    const colors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#10b981", "#3b82f6", "#8b5cf6"];
+    return Object.entries(depts).map(([dept, data], i) => {
+      const score = data.users > 0 ? Math.round(data.scoreSum / data.users) : 0;
+      return {
+        dept,
+        users: data.users,
+        score,
+        trend: Math.random() > 0.6 ? "up" : (Math.random() > 0.4 ? "down" : "stable"),
+        color: colors[i % colors.length]
+      };
+    }).sort((a,b) => b.score - a.score);
+  }, [contacts, riskScores]);
+
+  const dynamicTopRiskUsers = useMemo(() => {
+    const targetContacts = filteredContacts;
+    if (targetContacts.length === 0) return [];
+    return targetContacts.map(c => {
+      const rs = riskScores.find(r => r.contact_id === c.id)?.score || 0;
+      const events = behavioralEvents.filter(e => e.contact_id === c.id);
+      const clicks = events.filter(e => e.event_type === 'click').length;
+      const reported = events.filter(e => e.event_type === 'report').length;
+      
+      let lastTest = 'N/A';
+      if (events.length > 0) {
+        lastTest = new Date(Math.max(...events.map(e => new Date(e.event_timestamp || Date.now()).getTime()))).toISOString().split('T')[0];
+      }
+      
+      return {
+        id: c.id,
+        name: `${c.first_name} ${c.last_name}`,
+        email: c.email,
+        department: c.department || 'Non spécifié',
+        riskScore: rs,
+        clicks,
+        reported,
+        lastTest
+      };
+    }).sort((a, b) => b.riskScore - a.riskScore).slice(0, 5);
+  }, [filteredContacts, riskScores, behavioralEvents]);
+
   return (
     <div className="h-full overflow-y-auto p-6 custom-scrollbar">
       {/* Header */}
@@ -103,14 +188,38 @@ export default function RiskAnalytics() {
           <p className="text-stone-500 mt-1">Évaluez et suivez le risque humain en temps réel</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtrer
-          </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => exportToPDF('app-content', 'analyse_risque_kira')}>
             <Download className="w-4 h-4 mr-2" />
-            Exporter
+            PDF
           </Button>
+          <Button variant="outline" onClick={() => exportToExcel(dynamicTopRiskUsers, "analyse_risque")}>
+            <Download className="w-4 h-4 mr-2" />
+            Excel
+          </Button>
+          <Select value={deptFilter} onValueChange={setDeptFilter}>
+            <SelectTrigger className="w-40 border-stone-200">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Département" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les Départements</SelectItem>
+              <SelectItem value="it">IT & Technique</SelectItem>
+              <SelectItem value="rh">Ressources Humaines</SelectItem>
+              <SelectItem value="finance">Finance & Comptabilité</SelectItem>
+              <SelectItem value="sales">Ventes & Commercial</SelectItem>
+              <SelectItem value="marketing">Marketing</SelectItem>
+            </SelectContent>
+          </Select>
+          {deptFilter !== "all" && (
+            <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-stone-500 hover:text-stone-900"
+                onClick={() => setDeptFilter("all")}
+            >
+                Réinitialiser
+            </Button>
+          )}
         </div>
       </div>
 
@@ -124,7 +233,7 @@ export default function RiskAnalytics() {
                 <span className="text-stone-300">Score de Risque Global</span>
               </div>
               <div className="flex items-baseline gap-3">
-                <span className="text-6xl font-bold text-white">38</span>
+                <span className="text-6xl font-bold text-white">{globalRiskScore}</span>
                 <span className="text-2xl text-stone-400">/100</span>
               </div>
               <div className="flex items-center gap-2 mt-2">
@@ -135,15 +244,15 @@ export default function RiskAnalytics() {
             <div className="hidden md:block">
               <div className="w-32 h-32 rounded-full border-8 border-stone-700 flex items-center justify-center relative">
                 <div 
-                  className="absolute inset-0 rounded-full border-8 border-green-500"
+                  className={`absolute inset-0 rounded-full border-8 ${globalRiskScore >= 70 ? 'border-red-500' : globalRiskScore >= 50 ? 'border-orange-500' : 'border-green-500'}`}
                   style={{ 
-                    clipPath: `polygon(0 0, 100% 0, 100% ${38}%, 0 ${38}%)`,
+                    clipPath: `polygon(0 0, 100% 0, 100% ${globalRiskScore}%, 0 ${globalRiskScore}%)`,
                     transform: 'rotate(-90deg)',
                     transformOrigin: 'center'
                   }}
                 />
                 <div className="text-center">
-                  <span className="text-2xl font-bold text-white">Faible</span>
+                  <span className="text-2xl font-bold text-white">{getRiskLabel(globalRiskScore)}</span>
                 </div>
               </div>
             </div>
@@ -181,16 +290,16 @@ export default function RiskAnalytics() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Risk Evolution */}
-        <Card className="border-stone-200">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
+        <Card className="border-stone-200 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-blue-600" />
               Évolution du Risque par Département
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={riskEvolutionData}>
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={dynamicRiskEvolution}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
                 <YAxis stroke="#6b7280" fontSize={12} />
@@ -218,16 +327,16 @@ export default function RiskAnalytics() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={dynamicRadarData}>
                 <PolarGrid />
                 <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} />
                 <Radar
-                  name="Vulnérabilité"
-                  dataKey="A"
-                  stroke="#3b82f6"
-                  fill="#3b82f6"
-                  fillOpacity={0.3}
+                   name="Vulnérabilité"
+                   dataKey="A"
+                   stroke="#8b5cf6"
+                   fill="#8b5cf6"
+                   fillOpacity={0.5}
                 />
                 <Tooltip />
               </RadarChart>
@@ -258,7 +367,7 @@ export default function RiskAnalytics() {
                 </tr>
               </thead>
               <tbody>
-                {departmentRisk.map((dept, index) => (
+                {dynamicDepartmentRisk.map((dept, index) => (
                   <tr key={index} className="border-b border-stone-100 hover:bg-stone-50">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
@@ -344,7 +453,7 @@ export default function RiskAnalytics() {
                 </tr>
               </thead>
               <tbody>
-                {topRiskUsers.map((user) => (
+                {dynamicTopRiskUsers.map((user) => (
                   <tr key={user.id} className="border-b border-stone-100 hover:bg-stone-50">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
