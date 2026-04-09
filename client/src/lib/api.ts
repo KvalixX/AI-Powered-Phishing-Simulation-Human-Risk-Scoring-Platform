@@ -29,6 +29,8 @@ export interface Campaign {
     started_at: string | null;
     ended_at: string | null;
     rl_enabled: boolean;
+    target_departments?: string[];
+    target_contacts?: string[];
     metrics?: CampaignMetrics;
 }
 
@@ -131,6 +133,14 @@ export const api = {
     deleteContact: async (id: number): Promise<void> => {
         await apiInstance.delete(`/contacts/${id}`);
     },
+    importContacts: async (file: File): Promise<{ message: string }> => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const { data } = await apiInstance.post("/contacts/import", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        return data;
+    },
 
     // Risk Scores
     getRiskScores: async (): Promise<RiskScore[]> => {
@@ -210,6 +220,16 @@ export const api = {
     deleteEmailTemplate: async (id: number): Promise<void> => {
         await apiInstance.delete(`/email-templates/${id}`);
     },
+    generatePhishingTemplate: async (params: { 
+        contact_id: number; 
+        context?: string; 
+        difficulty: string;
+        campaign_name?: string;
+        attack_type?: string;
+    }): Promise<{ subject: string; content_html: string }> => {
+        const { data } = await apiInstance.post("/ai/generate-template", params);
+        return data;
+    },
 
     // Departments
     getDepartments: async (): Promise<Department[]> => {
@@ -222,5 +242,83 @@ export const api = {
     },
     deleteDepartment: async (id: number): Promise<void> => {
         await apiInstance.delete(`/departments/${id}`);
-    }
+    },
+
+    // ─── Dashboard ────────────────────────────────────────────────────────────
+    getDashboardMetrics: async (): Promise<any> => {
+        const { data } = await apiInstance.get("/dashboard/metrics");
+        return data;
+    },
+    getDashboardRiskTrend: async (): Promise<any[]> => {
+        const { data } = await apiInstance.get("/dashboard/risk-trend");
+        return data;
+    },
+    getDashboardRecentCampaigns: async (): Promise<any[]> => {
+        const { data } = await apiInstance.get("/dashboard/recent-campaigns");
+        return data;
+    },
+    getDashboardAiInsights: async (): Promise<any[]> => {
+        const { data } = await apiInstance.get("/dashboard/ai-insights");
+        return data;
+    },
+
+    // ─── Users ────────────────────────────────────────────────────────────────
+    getUsers: async (params?: { department?: string; riskLevel?: string; search?: string }): Promise<any[]> => {
+        const { data } = await apiInstance.get("/users", { params });
+        return data;
+    },
+    getUserById: async (id: number): Promise<any> => {
+        const { data } = await apiInstance.get(`/users/${id}`);
+        return data;
+    },
+    getUserRiskHistory: async (id: number): Promise<any[]> => {
+        const { data } = await apiInstance.get(`/users/${id}/risk-history`);
+        return data;
+    },
+    getUserCampaigns: async (id: number): Promise<any[]> => {
+        const { data } = await apiInstance.get(`/users/${id}/campaigns`);
+        return data;
+    },
+    createUser: async (userData: any): Promise<any> => {
+        const { data } = await apiInstance.post("/users", userData);
+        return data;
+    },
+    updateUser: async (id: number, userData: any): Promise<any> => {
+        const { data } = await apiInstance.put(`/users/${id}`, userData);
+        return data;
+    },
+    deleteUser: async (id: number): Promise<void> => {
+        await apiInstance.delete(`/users/${id}`);
+    },
+    assignUserTraining: async (userId: number, moduleId: number): Promise<any> => {
+        const { data } = await apiInstance.post(`/users/${userId}/training`, { moduleId });
+        return data;
+    },
+
+    // ─── Analytics ────────────────────────────────────────────────────────────
+    getClickRateTrend: async (): Promise<any[]> => {
+        const { data } = await apiInstance.get("/analytics/click-rate-trend");
+        return data;
+    },
+    getRiskDistribution: async (): Promise<any[]> => {
+        const { data } = await apiInstance.get("/analytics/risk-distribution");
+        return data;
+    },
+    getCampaignPerformance: async (): Promise<any[]> => {
+        const { data } = await apiInstance.get("/analytics/campaign-performance");
+        return data;
+    },
+    getBehaviorHeatmap: async (): Promise<any[]> => {
+        const { data } = await apiInstance.get("/analytics/behavior-heatmap");
+        return data;
+    },
+    getTrainingEffectiveness: async (): Promise<any[]> => {
+        const { data } = await apiInstance.get("/analytics/training-effectiveness");
+        return data;
+    },
+    getDepartmentRisk: async (): Promise<any[]> => {
+        const { data } = await apiInstance.get("/analytics/department-risk");
+        return data;
+    },
 };
+

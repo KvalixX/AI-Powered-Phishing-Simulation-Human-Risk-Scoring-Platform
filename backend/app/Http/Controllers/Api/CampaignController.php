@@ -13,7 +13,9 @@ class CampaignController extends Controller
 {
     public function index(): JsonResponse
     {
-        $campaigns = Campaign::with(['metrics', 'rlPolicy'])->get();
+        $campaigns = Campaign::with(['metrics', 'rlPolicy'])
+            ->where('user_id', auth()->id() ?? 1) // Scope to the current user
+            ->get();
         return response()->json($campaigns);
     }
 
@@ -26,12 +28,16 @@ class CampaignController extends Controller
             'difficulty_level' => 'nullable|in:facile,moyen,difficile,expert',
             'adaptation_params' => 'nullable|array',
             'rl_enabled' => 'nullable|boolean',
+            'target_departments' => 'nullable|array',
+            'target_contacts' => 'nullable|array',
+            'attack_type' => 'nullable|string',
             'started_at' => 'nullable|date',
             'ended_at' => 'nullable|date',
         ]);
 
         $validated['user_id'] = auth()->id() ?? 1;
         $campaign = Campaign::create($validated);
+
 
         // Auto-create initial metrics
         CampaignMetrics::create([
@@ -63,10 +69,13 @@ class CampaignController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'nullable|in:draft,active,completed',
+            'status' => 'nullable|in:draft,active,completed,paused',
             'difficulty_level' => 'nullable|in:facile,moyen,difficile,expert',
             'adaptation_params' => 'nullable|array',
             'rl_enabled' => 'nullable|boolean',
+            'attack_type' => 'nullable|string',
+            'target_departments' => 'nullable|array',
+            'target_contacts' => 'nullable|array',
         ]);
 
         $campaign->update($validated);

@@ -96,16 +96,20 @@ import {
   useTrainings,
   useCreateContact,
   useUpdateContact,
-  useDeleteContact
+  useDeleteContact,
+  useImportContacts
 } from "@/hooks/useApi";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Contact } from "@/lib/api";
 import { exportToExcel, exportToPDF } from "@/lib/utils";
+import { Upload } from "lucide-react";
 
 export default function Users() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const importContacts = useImportContacts();
   const { data: contacts = [], isLoading: loadingContacts } = useContacts();
   const { data: riskScores = [] } = useRiskScores();
   const { data: trainings = [] } = useTrainings();
@@ -134,6 +138,19 @@ export default function Users() {
     position: "",
     language: "fr"
   });
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await importContacts.mutateAsync(file);
+      toast({ title: "Succès", description: res.message || "Importation réussie." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Erreur", description: "L'importation a échoué. Assurez-vous que le format est CSV." });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleOpenAddDialog = () => {
     setSelectedContact(null);
@@ -306,6 +323,17 @@ export default function Users() {
           <p className="text-stone-500 mt-1">Gérez les utilisateurs et suivez leur exposition aux menaces</p>
         </div>
         <div className="flex gap-3">
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={fileInputRef} 
+            className="hidden" 
+            onChange={handleFileUpload}
+          />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importContacts.isPending}>
+            <Upload className="w-4 h-4 mr-2" />
+            {importContacts.isPending ? "Importation..." : "Importer CSV"}
+          </Button>
           <Button variant="outline" onClick={() => exportToPDF('app-content', 'utilisateurs_kira')}>
             <Download className="w-4 h-4 mr-2" />
             Exporter en PDF

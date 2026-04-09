@@ -12,7 +12,10 @@ class ContactController extends Controller
 {
     public function index(): JsonResponse
     {
-        $contacts = Contact::with('riskScore')->get();
+        // Scope contacts to the authenticated user's organization
+        // For demo purposes, if auth()->id() is null, fall back to 1.
+        $userId = auth()->id() ?? 1;
+        $contacts = Contact::with('riskScore')->where('user_id', $userId)->get();
         return response()->json($contacts);
     }
 
@@ -29,6 +32,7 @@ class ContactController extends Controller
             'training_history' => 'nullable|array',
         ]);
 
+        $validated['user_id'] = auth()->id() ?? 1;
         $contact = Contact::create($validated);
 
         // Initialize risk score at 0
@@ -41,6 +45,58 @@ class ContactController extends Controller
         ]);
 
         return response()->json($contact->load('riskScore'), 201);
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+        $data = array_map('str_getcsv', file($path));
+        // Remove header if present
+        $header = array_shift($data);
+
+        $userId = auth()->id() ?? 1;
+        $importedCount = 0;
+
+        foreach ($data as $row) {
+            // Assume format: email, first_name, last_name, department, position
+            if (count($row) >= 3) {
+                $email = $row[0] ?? '';
+                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    // Check if already exists for this user
+                    $exists = Contact::where('email', $email)->exists();
+                    if (!$exists) {
+                        $contact = Contact::create([
+                            'user_id' => $userId,
+                            'email' => $email,
+                            'first_name' => $row[1] ?? 'Inconnu',
+                            'last_name' => $row[2] ?? 'Inconnu',
+                            'department' => $row[3] ?? null,
+                            'position' => $row[4] ?? null,
+                            'language' => 'fr',
+                        ]);
+
+                        UserRiskScore::create([
+                            'contact_id' => $contact->id,
+                            'score' => 0,
+                            'level' => 'faible',
+                            'confidence' => 0,
+                            'last_updated' => now(),
+                        ]);
+
+                        $importedCount++;
+                    }
+                }
+            }
+        }
+
+        return response()->json([
+            'message' => "$importedCount contacts importés avec succès."
+        ], 200);
     }
 
     public function show(Contact $contact): JsonResponse

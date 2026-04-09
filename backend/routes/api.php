@@ -13,6 +13,9 @@ use App\Http\Controllers\Api\TrainingModuleController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\EmailTemplateController;
 use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\AnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,6 +38,7 @@ Route::prefix('v1')->group(function () {
         Route::put('user', [AuthController::class, 'update']);
 
         // ─── CONTACTS ───────────────────────────────────────────────────────────
+        Route::post('contacts/import', [ContactController::class, 'import']);
         Route::apiResource('contacts', ContactController::class);
         Route::get('contacts/{contact}/risk-score', [ContactController::class, 'riskScore']);
         Route::get('contacts/{contact}/behavioral-events', [BehavioralEventController::class, 'byContact']);
@@ -74,6 +78,37 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/{report}/download', [ReportController::class, 'download']);
         Route::apiResource('email-templates', EmailTemplateController::class);
         Route::apiResource('departments', DepartmentController::class);
+
+        // ─── DASHBOARD ──────────────────────────────────────────────────────────
+        Route::prefix('dashboard')->group(function () {
+            Route::get('metrics',          [DashboardController::class, 'metrics']);
+            Route::get('risk-trend',       [DashboardController::class, 'riskTrend']);
+            Route::get('recent-campaigns', [DashboardController::class, 'recentCampaigns']);
+            Route::get('ai-insights',      [DashboardController::class, 'aiInsights']);
+        });
+
+        // ─── USERS (Contacts as platform users) ─────────────────────────────────
+        Route::get('users',                          [UserController::class, 'index']);
+        Route::post('users',                         [UserController::class, 'store']);
+        Route::get('users/{id}',                     [UserController::class, 'show']);
+        Route::put('users/{id}',                     [UserController::class, 'update']);
+        Route::delete('users/{id}',                  [UserController::class, 'destroy']);
+        Route::get('users/{id}/risk-history',        [UserController::class, 'riskHistory']);
+        Route::get('users/{id}/campaigns',           [UserController::class, 'campaigns']);
+        Route::post('users/{id}/training',           [UserController::class, 'assignTraining']);
+
+        // ─── ANALYTICS ──────────────────────────────────────────────────────────
+        Route::prefix('analytics')->group(function () {
+            Route::get('click-rate-trend',       [AnalyticsController::class, 'clickRateTrend']);
+            Route::get('risk-distribution',      [AnalyticsController::class, 'riskDistribution']);
+            Route::get('campaign-performance',   [AnalyticsController::class, 'campaignPerformance']);
+            Route::get('behavior-heatmap',       [AnalyticsController::class, 'behaviorHeatmap']);
+            Route::get('training-effectiveness', [AnalyticsController::class, 'trainingEffectiveness']);
+            Route::get('department-risk',        [AnalyticsController::class, 'departmentRisk']);
+        });
+
+        // ─── AI GENERATION ────────────────────────────────────────────────────────
+        Route::post('ai/generate-template', [App\Http\Controllers\Api\AIController::class, 'generatePhishingEmail']);
 
     }); // End sanctum protected routes
 });

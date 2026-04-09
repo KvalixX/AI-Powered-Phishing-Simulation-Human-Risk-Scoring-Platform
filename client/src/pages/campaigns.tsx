@@ -75,16 +75,33 @@ import {
   usePauseCampaign,
   useResumeCampaign,
   useEmailTemplates,
-  useDepartments
+  useDepartments,
+  useGeneratePhishingTemplate,
+  useContacts
 } from "@/hooks/useApi";
 import { Campaign } from "@/lib/api";
 
-const aiTemplates: any[] = [];
+const aiTemplates = [
+  { id: 1, name: "CEO Impersonation", description: "Email urgent du PDG demandant un virement.", level: "Expert", icon: "👑" },
+  { id: 2, name: "IT Portal Reset", description: "Demande de réinitialisation de mot de passe.", level: "Moyen", icon: "💻" },
+  { id: 3, name: "Payroll Update", description: "Erreur détectée sur votre bulletin de paie.", level: "Difficile", icon: "💰" },
+  { id: 4, name: "Gift Card Award", description: "Félicitations, vous avez gagné un chèque cadeau !", level: "Facile", icon: "🎁" },
+  { id: 5, name: "Security Alert", description: "Connexion inhabituelle sur votre compte Office.", level: "Moyen", icon: "🔒" },
+];
 
 const difficultyColors = {
-  easy: "bg-green-100 text-green-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  hard: "bg-red-100 text-red-700"
+  facile: "bg-green-100 text-green-700",
+  moyen: "bg-yellow-100 text-yellow-700",
+  difficile: "bg-orange-100 text-orange-700",
+  expert: "bg-red-100 text-red-700"
+};
+
+const attackTypeLabels: Record<string, string> = {
+  spear_phishing: "Spear Phishing",
+  social_engineering: "Social Eng.",
+  "1": "Facture Impayée",
+  "2": "Microsoft Update",
+  "3": "Bonus RH"
 };
 
 const statusColors = {
@@ -113,22 +130,69 @@ export default function Campaigns() {
   const resumeCampaignMutation = useResumeCampaign();
 
   const { data: templates = [] } = useEmailTemplates();
-  const { data: departments = [] } = useDepartments();
 
   const [formData, setFormData] = useState<Partial<Campaign>>({
     name: "",
     difficulty_level: "moyen",
-    status: "draft"
+    status: "draft",
+    target_departments: [],
+    target_contacts: []
   });
 
-  const handleCreate = async () => {
+  const [targetMode, setTargetMode] = useState<"all" | "departments" | "contacts">("all");
+  const { data: contacts = [] } = useContacts();
+
+  const [aiContext, setAiContext] = useState("");
+  const [aiContent, setAiContent] = useState<{ subject: string; content_html: string } | null>(null);
+  const generateAi = useGeneratePhishingTemplate();
+
+  const handleAiGenerate = async () => {
     try {
-      await createCampaign.mutateAsync(formData);
-      toast({ title: "Succès", description: "Campagne créée avec succès." });
+      // Pick a representative contact ID for preview personalization
+      let previewContactId = 1; // Fallback
+      
+      if (targetMode === "contacts" && formData.target_contacts && formData.target_contacts.length > 0) {
+        previewContactId = parseInt(formData.target_contacts[0]);
+      } else if (targetMode === "departments" && formData.target_departments && formData.target_departments.length > 0) {
+        const firstDept = formData.target_departments[0];
+        const representative = contacts.find(c => c.department === firstDept);
+        if (representative) previewContactId = representative.id;
+      } else if (contacts.length > 0) {
+        previewContactId = contacts[0].id;
+      }
+
+      const res = await generateAi.mutateAsync({ 
+        contact_id: previewContactId, 
+        context: aiContext, 
+        difficulty: formData.difficulty_level as string,
+        campaign_name: formData.name,
+        attack_type: attackTypeLabels[formData.attack_type as keyof typeof attackTypeLabels] || formData.attack_type
+      });
+      setAiContent(res);
+      toast({ title: "Succès", description: "Modèle généré via IA." });
+    } catch (e: any) {
+      let errorMsg = "L'intelligence artificielle n'a pas pu générer le contenu.";
+      if (e.response && e.response.data && e.response.data.error) {
+        errorMsg = e.response.data.error;
+      }
+      toast({ variant: "destructive", title: "Erreur IA", description: errorMsg });
+    }
+  };
+  const handleSubmit = async () => {
+    try {
+      const data = formData;
+      
+      if (selectedCampaign) {
+        await updateCampaign.mutateAsync({ id: selectedCampaign.id, data });
+        toast({ title: "Succès", description: "Campagne mise à jour avec succès." });
+      } else {
+        await createCampaign.mutateAsync(data);
+        toast({ title: "Succès", description: "Campagne créée avec succès." });
+      }
       setShowCreateDialog(false);
-      setFormData({ name: "", difficulty_level: "moyen", status: "draft" });
+      setFormData({ name: "", difficulty_level: "moyen", status: "draft", target_departments: [], target_contacts: [], attack_type: "" });
     } catch (error) {
-      toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue." });
+      toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue lors de l'enregistrement." });
     }
   };
 
@@ -153,23 +217,6 @@ export default function Campaigns() {
         await updateCampaign.mutateAsync({ id: campaign.id, data: { status: newStatus } });
       }
       toast({ title: "Succès", description: `Campagne ${newStatus}.` });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue." });
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (selectedCampaign) {
-        await updateCampaign.mutateAsync({ id: selectedCampaign.id, data: formData });
-        toast({ title: "Succès", description: "Campagne mise à jour." });
-      } else {
-        await createCampaign.mutateAsync(formData);
-        toast({ title: "Succès", description: "Campagne créée." });
-      }
-      setShowCreateDialog(false);
-      setSelectedCampaign(null);
-      setFormData({ name: "", difficulty_level: "moyen", status: "draft" });
     } catch (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Une erreur est survenue." });
     }
@@ -227,7 +274,11 @@ export default function Campaigns() {
           )}
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+                setSelectedCampaign(null);
+                setFormData({ name: "", difficulty_level: "moyen", status: "draft", target_departments: [], target_contacts: [], attack_type: "" });
+                setShowCreateDialog(true);
+              }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Nouvelle Campagne
               </Button>
@@ -255,16 +306,21 @@ export default function Campaigns() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-stone-700">Type d'attaque</label>
-                      <Select>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {templates.map(t => (
-                          <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Select 
+                        value={formData.attack_type || ""} 
+                        onValueChange={(val: any) => setFormData({...formData, attack_type: val})}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {templates.map(t => (
+                            <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                          ))}
+                          <SelectItem value="spear_phishing">Spear Phishing personnalisé</SelectItem>
+                          <SelectItem value="social_engineering">Social Engineering IT</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-stone-700">Difficulté</label>
@@ -284,19 +340,68 @@ export default function Campaigns() {
                       </Select>
                     </div>
                   </div>
-                <div>
-                  <label className="text-sm font-medium text-stone-700">Groupes cibles</label>
-                  <Select>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Sélectionner les groupes..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les utilisateurs</SelectItem>
-                      {departments.map(d => (
-                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-stone-700">Sélection des cibles</label>
+                    <Select value={targetMode} onValueChange={(val: any) => setTargetMode(val)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Mode de ciblage" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les utilisateurs ({contacts.length})</SelectItem>
+                        <SelectItem value="departments">Par Département</SelectItem>
+                        <SelectItem value="contacts">Par Utilisateur Individuel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {targetMode === "departments" && (
+                    <div className="bg-stone-50 p-3 rounded-lg border border-stone-200">
+                      <label className="text-sm font-medium text-stone-700 mb-2 block">Cocher les départements cibles :</label>
+                      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                        {Array.from(new Set(contacts.map(c => c.department).filter(Boolean))).map(depName => (
+                          <div key={depName} className="flex items-center space-x-2">
+                            <input 
+                              type="checkbox" 
+                              id={`dept-${depName}`} 
+                              checked={(formData.target_departments || []).includes(depName as string)}
+                              onChange={(e) => {
+                                const current = formData.target_departments || [];
+                                if (e.target.checked) setFormData({...formData, target_departments: [...current, depName as string]});
+                                else setFormData({...formData, target_departments: current.filter((x: string) => x !== depName)});
+                              }}
+                            />
+                            <label htmlFor={`dept-${depName}`} className="text-sm text-stone-600">{depName}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {targetMode === "contacts" && (
+                    <div className="bg-stone-50 p-3 rounded-lg border border-stone-200">
+                      <label className="text-sm font-medium text-stone-700 mb-2 block">Cocher les contacts individuels :</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                        {contacts.map(c => (
+                          <div key={c.id} className="flex items-center space-x-2">
+                            <input 
+                              type="checkbox" 
+                              id={`contact-${c.id}`} 
+                              checked={(formData.target_contacts || []).includes(c.id.toString())}
+                              onChange={(e) => {
+                                const current = formData.target_contacts || [];
+                                if (e.target.checked) setFormData({...formData, target_contacts: [...current, c.id.toString()]});
+                                else setFormData({...formData, target_contacts: current.filter((x: string) => x !== c.id.toString())});
+                              }}
+                            />
+                            <label htmlFor={`contact-${c.id}`} className="text-sm text-stone-600 tooltip-trigger truncate block max-w-full">
+                              {c.first_name} {c.last_name} ({c.email})
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -306,18 +411,51 @@ export default function Campaigns() {
                   <p className="text-sm text-purple-700">
                     L'IA générera un email personnalisé basé sur le contexte de votre organisation et les dernières tendances de phishing.
                   </p>
+                  <div className="mt-2">
+                     <label className="text-sm font-medium text-purple-800">Contexte (Optionnel)</label>
+                     <Input 
+                        placeholder="Ex: Mise à jour RH urgente..." 
+                        className="mt-1 bg-white border-purple-200"
+                        value={aiContext}
+                        onChange={(e) => setAiContext(e.target.value)}
+                     />
+                  </div>
+                  {aiContent && (
+                    <div className="mt-3 bg-white p-3 rounded border border-purple-100 text-sm">
+                      <div className="flex items-center justify-between mb-2">
+                         <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                           Exemple de personnalisation
+                         </span>
+                         <span className="text-[10px] text-stone-400">
+                           Cible démo : {contacts.find(c => (targetMode === "contacts" && formData.target_contacts && formData.target_contacts.length > 0) ? c.id === parseInt(formData.target_contacts[0]) : (targetMode === "departments" && formData.target_departments && formData.target_departments.length > 0) ? c.department === formData.target_departments[0] : c.id === contacts[0]?.id)?.first_name || 'Khalil'}
+                         </span>
+                      </div>
+                      <strong>Sujet :</strong> {aiContent.subject}
+                      <div className="mt-2 text-xs text-stone-600 p-2 bg-stone-50 rounded border border-stone-100 italic" dangerouslySetInnerHTML={{__html: aiContent.content_html}} />
+                      <p className="mt-2 text-[10px] text-stone-400 italic">
+                        Note : Lors de l'envoi réel, chaque destinataire recevra une version personnalisée avec son propre nom et service.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
                   <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                     Annuler
                   </Button>
                   <Button 
-                    className="bg-purple-600 hover:bg-purple-700"
+                    className="bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-300"
+                    onClick={handleAiGenerate}
+                    disabled={generateAi.isPending}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {generateAi.isPending ? "Génération en cours..." : "Prévisualiser IA"}
+                  </Button>
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700"
                     onClick={handleSubmit}
                     disabled={createCampaign.isPending || updateCampaign.isPending}
                   >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {selectedCampaign ? "Mettre à jour" : "Générer avec IA"}
+                    {selectedCampaign ? "Mettre à jour" : "Créer Campagne"}
                   </Button>
                 </div>
               </div>
@@ -326,31 +464,6 @@ export default function Campaigns() {
         </div>
       </div>
 
-      {/* AI Templates Section */}
-      <Card className="mb-6 border-stone-200">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-600" />
-            Templates IA
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {aiTemplates.map((template) => (
-              <Card key={template.id} className="border-stone-200 hover:border-purple-300 cursor-pointer transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-purple-500" />
-                    <Badge variant="outline" className="text-xs">{template.category}</Badge>
-                  </div>
-                  <h4 className="font-medium text-stone-900 text-sm">{template.name}</h4>
-                  <p className="text-xs text-stone-500 mt-1 line-clamp-2">{template.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Search and Filter */}
       <div className="flex items-center gap-4 mb-6">
@@ -400,18 +513,21 @@ export default function Campaigns() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge className={statusColors[campaign.status as keyof typeof statusColors] || statusColors.draft}>
+                        <Badge variant="secondary" className={statusColors[campaign.status as keyof typeof statusColors] || ""}>
                           {campaign.status === "active" ? "Active" :
                             campaign.status === "completed" ? "Terminée" :
                               campaign.status === "scheduled" ? "Planifiée" :
                                 campaign.status === "draft" ? "Brouillon" : "En pause"}
                         </Badge>
-                        <Badge className={difficultyColors[campaign.difficulty_level as keyof typeof difficultyColors] || difficultyColors.medium}>
-                          {campaign.difficulty_level === "facile" ? "Facile" :
-                            campaign.difficulty_level === "moyen" ? "Moyen" :
-                              campaign.difficulty_level === "difficile" ? "Difficile" : "Expert"}
+                        <Badge variant="outline" className={difficultyColors[campaign.difficulty_level as keyof typeof difficultyColors] || ""}>
+                          {campaign.difficulty_level.charAt(0).toUpperCase() + campaign.difficulty_level.slice(1)}
                         </Badge>
-                        <Badge variant="outline" className="text-stone-500 ml-2">ID: {campaign.id}</Badge>
+                        {campaign.attack_type && (
+                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                            {attackTypeLabels[campaign.attack_type as keyof typeof attackTypeLabels] || campaign.attack_type}
+                          </Badge>
+                        )}
+                        <span className="text-[10px] text-stone-400">ID: {campaign.id}</span>
                       </div>
                     </div>
                   </div>
@@ -428,7 +544,10 @@ export default function Campaigns() {
                         setFormData({
                           name: campaign.name,
                           difficulty_level: campaign.difficulty_level,
-                          status: campaign.status
+                          status: campaign.status,
+                          target_departments: campaign.target_departments,
+                          target_contacts: campaign.target_contacts,
+                          attack_type: campaign.attack_type
                         });
                         setShowCreateDialog(true);
                       }}>

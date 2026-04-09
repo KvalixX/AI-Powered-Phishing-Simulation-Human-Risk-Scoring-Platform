@@ -18,14 +18,19 @@ class Campaign extends Model
         'status',
         'user_id',
         'difficulty_level',
+        'attack_type',
         'adaptation_params',
         'rl_enabled',
+        'target_departments',
+        'target_contacts',
         'started_at',
         'ended_at',
     ];
 
     protected $casts = [
         'adaptation_params' => 'array',
+        'target_departments' => 'array',
+        'target_contacts' => 'array',
         'rl_enabled' => 'boolean',
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
