@@ -119,57 +119,58 @@ class DatabaseSeeder extends Seeder
         }
 
         // 6. CREATE CONTACTS, RISK SCORES, AND EVENTS
-        $firstNames = ['Jean', 'Marie', 'Paul', 'Sophie', 'Luc', 'Emma', 'Pierre', 'Julie', 'Marc', 'Alice', 'Thomas', 'Laura', 'David', 'Claire', 'Nicolas', 'Antoine', 'Sarah', 'Mathieu', 'Elise', 'Kevin'];
-        $lastNames = ['Dupont', 'Martin', 'Legrand', 'Garnier', 'Richard', 'Bernard', 'Petit', 'Robert', 'Leroy', 'Moreau', 'Simon', 'Laurent', 'Lefebvre', 'Michel', 'Garcia', 'David', 'Bertrand', 'Roux', 'Vincent', 'Fournier'];
+        $firstNames = ['Jean', 'Marie', 'Paul', 'Sophie', 'Luc', 'Emma', 'Pierre', 'Julie', 'Marc', 'Alice', 'Thomas', 'Laura', 'David', 'Claire', 'Nicolas', 'Antoine', 'Sarah', 'Mathieu', 'Elise', 'Kevin', 'Robert', 'Julien', 'Amélie', 'Christophe', 'Isabelle'];
+        $lastNames = ['Dupont', 'Martin', 'Legrand', 'Garnier', 'Richard', 'Bernard', 'Petit', 'Robert', 'Leroy', 'Moreau', 'Simon', 'Laurent', 'Lefebvre', 'Michel', 'Garcia', 'David', 'Bertrand', 'Roux', 'Vincent', 'Fournier', 'Morel', 'Girard', 'Andre', 'Mercier', 'Guillot'];
         $departments = ['IT & Infrastructure', 'Finance & Accounting', 'Human Resources', 'Marketing & Sales', 'Legal & Compliance', 'Executive Office'];
         $positions = ['Lead', 'Junior', 'Manager', 'Directeur', 'Analyste', 'Assistant'];
 
-        // Create 40-50 contacts for good analytics
-        for ($i = 0; $i < 45; $i++) {
+        // Create 50 contacts for good analytics
+        for ($i = 0; $i < 50; $i++) {
             $fn = $firstNames[array_rand($firstNames)];
             $ln = $lastNames[array_rand($lastNames)];
             $dept = $departments[array_rand($departments)];
             
             $contact = Contact::create([
+                'user_id' => $admin->id,
                 'first_name' => $fn,
                 'last_name' => $ln,
                 'email' => strtolower($fn[0] . '.' . $ln . $i . '@kira-demo.com'),
                 'department' => $dept,
                 'position' => $positions[array_rand($positions)],
-                'language' => $i % 5 == 0 ? 'en' : 'fr',
+                'language' => $i % 7 == 0 ? 'en' : 'fr',
                 'training_history' => []
             ]);
 
             // User Risk Score Logic based on department
-            $baseScore = rand(10, 60);
-            if ($dept === 'IT & Infrastructure') $baseScore -= 15;
-            if ($dept === 'Marketing & Sales') $baseScore += 15;
-            if ($dept === 'Executive Office') $baseScore += 20;
+            $baseScore = rand(20, 70);
+            if ($dept === 'IT & Infrastructure') $baseScore -= 20;
+            if ($dept === 'Marketing & Sales') $baseScore += 10;
+            if ($dept === 'Executive Office') $baseScore += 25;
             
-            $scoreValue = max(5, min(98, $baseScore + rand(-10, 10)));
-            $level = $scoreValue < 30 ? 'faible' : ($scoreValue < 60 ? 'moyen' : ($scoreValue < 85 ? 'élevé' : 'critique'));
+            $scoreValue = max(5, min(95, $baseScore + rand(-15, 15)));
+            $level = $scoreValue < 30 ? 'faible' : ($scoreValue < 55 ? 'moyen' : ($scoreValue < 80 ? 'élevé' : 'critique'));
 
             UserRiskScore::create([
                 'contact_id' => $contact->id,
                 'score' => $scoreValue,
                 'level' => $level,
-                'confidence' => mt_rand(75, 99) / 100,
+                'confidence' => mt_rand(80, 99) / 100,
                 'features' => [
                     'impulsivity' => mt_rand(1, 10), 
-                    'reporting_rate' => $dept === 'IT & Infrastructure' ? mt_rand(7, 10) : mt_rand(1, 6),
-                    'temporal_profile' => ['morning_vulnerability' => rand(0, 1) > 0.5]
+                    'reporting_rate' => $dept === 'IT & Infrastructure' ? mt_rand(7, 10) : mt_rand(1, 5),
+                    'temporal_profile' => ['morning_vulnerability' => rand(0, 1) > 0.4]
                 ],
-                'last_updated' => now()->subDays(rand(0, 15))
+                'last_updated' => now()->subDays(rand(0, 30))
             ]);
         }
 
         // 7. CREATE CAMPAIGNS AND EVENTS LINKED
         $campaignsData = [
-            ['name' => 'Campagne Q1 - Phishing de Masse Bank', 'status' => 'completed', 'difficulty' => 'facile', 'started' => now()->subMonths(3), 'ended' => now()->subMonths(3)->addDays(14)],
-            ['name' => 'Spear Phishing Executives - Fraude au Président', 'status' => 'completed', 'difficulty' => 'expert', 'started' => now()->subMonths(1), 'ended' => now()->subMonths(1)->addDays(7)],
-            ['name' => 'Alerte Patch de Sécurité IT', 'status' => 'active', 'difficulty' => 'moyen', 'started' => now()->subDays(3), 'ended' => null],
-            ['name' => 'Test Login Office 365 Outlook', 'status' => 'active', 'difficulty' => 'difficile', 'started' => now()->subHours(12), 'ended' => null],
-            ['name' => 'Annonce RSE Trimestrielle', 'status' => 'scheduled', 'difficulty' => 'facile', 'started' => now()->addDays(5), 'ended' => null],
+            ['name' => 'Q1 Awareness: Credential Phish', 'status' => 'completed', 'difficulty' => 'facile', 'attack_type' => 'email', 'started' => now()->subMonths(3), 'ended' => now()->subMonths(3)->addDays(10)],
+            ['name' => 'CEO Fraud - Urgent Wire Transfer', 'status' => 'completed', 'difficulty' => 'difficile', 'attack_type' => 'spear-phishing', 'started' => now()->subMonths(1), 'ended' => now()->subMonths(1)->addDays(5)],
+            ['name' => 'Microsoft 365 Security Alert Simulation', 'status' => 'active', 'difficulty' => 'moyen', 'attack_type' => 'email', 'started' => now()->subDays(2), 'ended' => null],
+            ['name' => 'HR Policy Update - Social Engineering', 'status' => 'active', 'difficulty' => 'difficile', 'attack_type' => 'social-engineering', 'started' => now()->subHours(6), 'ended' => null],
+            ['name' => 'Upcoming: Password Policy Compliance', 'status' => 'scheduled', 'difficulty' => 'facile', 'attack_type' => 'email', 'started' => now()->addDays(3), 'ended' => null],
         ];
 
         $allContacts = Contact::all();
@@ -178,62 +179,87 @@ class DatabaseSeeder extends Seeder
             $campaign = Campaign::create([
                 'user_id' => $admin->id,
                 'name' => $cData['name'],
-                'description' => 'Simulation context: ' . $cData['name'],
+                'description' => 'Simulated ' . $cData['attack_type'] . ' campaign with ' . $cData['difficulty'] . ' difficulty.',
                 'status' => $cData['status'],
                 'difficulty_level' => $cData['difficulty'],
+                'attack_type' => $cData['attack_type'],
                 'rl_enabled' => $cData['difficulty'] !== 'facile',
+                'target_departments' => $cData['attack_type'] === 'spear-phishing' ? ['Executive Office', 'Finance & Accounting'] : ['IT & Infrastructure', 'Finance & Accounting', 'Human Resources', 'Marketing & Sales', 'Legal & Compliance', 'Executive Office'],
                 'started_at' => $cData['started'],
                 'ended_at' => $cData['ended']
             ]);
 
             if ($cData['status'] !== 'scheduled') {
-                // Generate some events for this campaign
-                $participantsCount = rand(15, 40);
-                $participants = $allContacts->random($participantsCount);
+                // Determine targeted contacts
+                $targetedContacts = $allContacts->filter(function($c) use ($campaign) {
+                    return in_array($c->department, $campaign->target_departments);
+                });
+
+                if ($targetedContacts->isEmpty()) $targetedContacts = $allContacts;
+                
+                $participantsCount = rand(floor($targetedContacts->count() * 0.6), $targetedContacts->count());
+                $participants = $targetedContacts->random($participantsCount);
                 
                 $totalClicks = 0;
                 $totalReports = 0;
+                $totalSubmissions = 0;
 
                 foreach($participants as $p) {
                     $rand = mt_rand(0, 100);
-                    $eventType = null;
                     
-                    // Logic: IT people report more, Executive click more
-                    $clickProb = 20;
-                    if ($p->department === 'Executive Office') $clickProb = 45;
-                    if ($p->department === 'IT & Infrastructure') $clickProb = 5;
+                    // Logic: IT people report more, Executive/Sales click more
+                    $clickProb = 15;
+                    if ($p->department === 'Executive Office') $clickProb = 40;
+                    if ($p->department === 'Marketing & Sales') $clickProb = 30;
+                    if ($p->department === 'IT & Infrastructure') $clickProb = 3;
+                    
+                    // Increase probability for spear-phishing
+                    if ($campaign->attack_type === 'spear-phishing') $clickProb += 15;
 
                     if ($rand < $clickProb) {
-                        $eventType = 'click';
                         $totalClicks++;
                         
-                        // Sometime they also submit data
-                        if (mt_rand(0, 100) < 40) {
+                        // Click event
+                        BehavioralEvent::create([
+                            'contact_id' => $p->id,
+                            'campaign_id' => $campaign->id,
+                            'event_type' => 'click',
+                            'reaction_time' => rand(30, 1200),
+                            'device' => rand(0, 1) > 0.4 ? 'Windows Desktop' : 'MacBook Pro',
+                            'ip_address' => '10.50.1.' . rand(1, 254),
+                            'event_timestamp' => Carbon::parse($campaign->started_at)->addMinutes(rand(10, 480))
+                        ]);
+
+                        // Sometime they also submit data (30-50% of clickers)
+                        if (mt_rand(0, 100) < 45) {
+                            $totalSubmissions++;
                             BehavioralEvent::create([
                                 'contact_id' => $p->id,
                                 'campaign_id' => $campaign->id,
                                 'event_type' => 'submission',
-                                'reaction_time' => rand(10, 300),
-                                'device' => rand(0, 1) > 0.5 ? 'Windows Desktop' : 'iPhone iOS',
-                                'ip_address' => '192.168.1.' . rand(10, 255),
-                                'event_timestamp' => Carbon::parse($campaign->started_at)->addMinutes(rand(10, 600))
+                                'reaction_time' => rand(60, 300),
+                                'device' => rand(0, 1) > 0.5 ? 'Chrome Browser' : 'Edge Browser',
+                                'ip_address' => '10.50.1.' . rand(1, 254),
+                                'event_timestamp' => Carbon::parse($campaign->started_at)->addMinutes(rand(11, 500))
                             ]);
                         }
-                    } else if ($rand > 80) {
-                        $eventType = 'report';
-                        $totalReports++;
-                    }
-
-                    if ($eventType) {
-                        BehavioralEvent::create([
-                            'contact_id' => $p->id,
-                            'campaign_id' => $campaign->id,
-                            'event_type' => $eventType,
-                            'reaction_time' => rand(5, 1000),
-                            'device' => rand(0, 1) > 0.5 ? 'Android Phone' : 'MacBook Pro',
-                            'ip_address' => '10.0.0.' . rand(1, 255),
-                            'event_timestamp' => Carbon::parse($campaign->started_at)->addMinutes(rand(1, 600))
-                        ]);
+                    } else if ($rand > 75) {
+                        // People who don't click might report (especially IT)
+                        $reportProb = 25;
+                        if ($p->department === 'IT & Infrastructure') $reportProb = 60;
+                        
+                        if (mt_rand(0, 100) < $reportProb) {
+                            $totalReports++;
+                            BehavioralEvent::create([
+                                'contact_id' => $p->id,
+                                'campaign_id' => $campaign->id,
+                                'event_type' => 'report',
+                                'reaction_time' => rand(120, 3600),
+                                'device' => 'Corporate Email Client',
+                                'ip_address' => '10.50.1.' . rand(1, 254),
+                                'event_timestamp' => Carbon::parse($campaign->started_at)->addMinutes(rand(20, 600))
+                            ]);
+                        }
                     }
                 }
 
@@ -241,12 +267,13 @@ class DatabaseSeeder extends Seeder
                 CampaignMetrics::create([
                     'campaign_id' => $campaign->id,
                     'ctr' => ($participantsCount > 0) ? ($totalClicks / $participantsCount) * 100 : 0,
-                    'precision' => mt_rand(85, 98) / 100,
-                    'auc_roc' => mt_rand(75, 92) / 100,
+                    'precision' => mt_rand(88, 99) / 100,
+                    'auc_roc' => mt_rand(80, 95) / 100,
                     'statistical_tests' => [
                         'significance' => true,
-                        'p_value' => 0.02,
-                        'reporting_rate' => ($participantsCount > 0) ? ($totalReports / $participantsCount) * 100 : 0
+                        'p_value' => mt_rand(1, 5) / 100,
+                        'reporting_rate' => ($participantsCount > 0) ? ($totalReports / $participantsCount) * 100 : 0,
+                        'submission_rate' => ($participantsCount > 0) ? ($totalSubmissions / $participantsCount) * 100 : 0
                     ]
                 ]);
 
@@ -254,16 +281,17 @@ class DatabaseSeeder extends Seeder
                 if ($campaign->rl_enabled) {
                     RLPolicy::create([
                         'campaign_id' => $campaign->id,
-                        'rewards' => mt_rand(-10, 30),
+                        'rewards' => mt_rand(-5, 40),
                         'campaign_params' => [
-                            'difficulty_increment' => 0.05,
-                            'best_tone' => 'authority'
+                            'difficulty_increment' => 0.08,
+                            'best_tone' => $campaign->attack_type === 'spear-phishing' ? 'personal' : 'authority'
                         ],
-                        'state' => ['learning_step' => rand(1, 5)]
+                        'state' => ['learning_step' => rand(2, 8)]
                     ]);
                 }
             }
         }
+
 
         // 8. CREATE TRAININGS
         $highRiskContacts = Contact::whereHas('riskScore', function($q) {
