@@ -40,7 +40,7 @@ cd AI-Powered-Phishing-Simulation-Human-Risk-Scoring-Platform
 ```bash
 cd backend
 composer install
-cp .env.example .env
+copy .env.example .env
 ```
 **Important**: Open `.env` and configure:
 - `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`

@@ -43,6 +43,11 @@ class DashboardController extends Controller
         $recentEmails  = BehavioralEvent::where('created_at', '>=', Carbon::now()->subDays(30))->count();
         $clickRate     = $recentEmails > 0 ? round(($recentClicks / $recentEmails) * 100, 1) : 0;
 
+        $recentReports = BehavioralEvent::where('event_type', 'report')
+            ->where('created_at', '>=', Carbon::now()->subDays(30))
+            ->count();
+        $reportRate    = $recentEmails > 0 ? round(($recentReports / $recentEmails) * 100, 1) : 0;
+
         return response()->json([
             'global_risk_score'   => round($avgScore, 1),
             'score_trend'         => $scoreTrend,
@@ -51,6 +56,7 @@ class DashboardController extends Controller
             'high_risk_contacts'  => $highRiskCount,
             'training_completion' => $trainingRate,
             'click_rate_30d'      => $clickRate,
+            'report_rate_30d'     => $reportRate,
         ]);
     }
 

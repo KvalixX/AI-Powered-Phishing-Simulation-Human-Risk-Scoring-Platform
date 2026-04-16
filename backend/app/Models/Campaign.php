@@ -60,4 +60,9 @@ class Campaign extends Model
     {
         return $this->hasOne(CampaignMetrics::class);
     }
+
+    public function sentPhishingEmails(): HasMany
+    {
+        return $this->hasMany(SentPhishingEmail::class);
+    }
 }

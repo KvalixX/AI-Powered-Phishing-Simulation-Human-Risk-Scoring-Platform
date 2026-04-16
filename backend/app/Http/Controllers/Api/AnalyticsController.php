@@ -9,6 +9,7 @@ use App\Models\CampaignMetrics;
 use App\Models\Contact;
 use App\Models\Training;
 use App\Models\UserRiskScore;
+use App\Models\SentPhishingEmail;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 
@@ -188,5 +189,30 @@ class AnalyticsController extends Controller
             ->values();
 
         return response()->json($departments);
+    }
+
+    /**
+     * GET /api/v1/analytics/global-metrics
+     * Calculate global performance and risk metrics.
+     */
+    public function globalMetrics(): JsonResponse
+    {
+        $avgRiskScore = UserRiskScore::avg('score') ?? 50;
+
+        $totalSent = SentPhishingEmail::count();
+        $totalClicks = SentPhishingEmail::where('status', 'clicked')->count();
+        $totalReports = SentPhishingEmail::where('status', 'reported')->count();
+
+        $totalAssignedTrainings = Training::count();
+        $totalCompletedTrainings = Training::where('status', 'completed')->count();
+
+        return response()->json([
+            'global_risk_score' => round($avgRiskScore, 1),
+            'malicious_click_rate' => $totalSent > 0 ? round(($totalClicks / $totalSent) * 100, 1) : 0,
+            'average_report_rate' => $totalSent > 0 ? round(($totalReports / $totalSent) * 100, 1) : 0,
+            'training_completion' => $totalAssignedTrainings > 0 ? round(($totalCompletedTrainings / $totalAssignedTrainings) * 100, 1) : 0,
+            'total_contacts' => Contact::count(),
+            'total_campaigns' => Campaign::count(),
+        ]);
     }
 }

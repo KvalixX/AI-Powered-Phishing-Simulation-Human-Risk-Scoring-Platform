@@ -55,7 +55,7 @@ const quickActions = [
   { icon: AlertTriangle, label: "Alerte Rapide", color: "bg-orange-500" },
 ];
 
-import { useCampaigns, useRiskScores, useContacts, useBehavioralEvents, useTrainings } from "@/hooks/useApi";
+import { useCampaigns, useRiskScores, useContacts, useBehavioralEvents, useTrainings, useGlobalMetrics } from "@/hooks/useApi";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { exportToExcel, exportToPDF, handlePrint } from "@/lib/utils";
@@ -67,6 +67,7 @@ export default function Dashboard() {
   const { data: contacts = [], isLoading: loadingContacts } = useContacts();
   const { data: behavioralEvents = [], isLoading: loadingEvents } = useBehavioralEvents();
   const { data: trainings = [], isLoading: loadingTrainings } = useTrainings();
+  const { data: metrics, isLoading: loadingMetrics } = useGlobalMetrics();
 
   // Prepare full data for excel export
   const fullDashboardData = useMemo(() => {
@@ -88,10 +89,7 @@ export default function Dashboard() {
     return [...campaigns].sort((a, b) => b.id - a.id).slice(0, 5);
   }, [campaigns]);
 
-  const globalRiskScore = useMemo(() => {
-    if (riskScores.length === 0) return 0;
-    return Math.round(riskScores.reduce((acc, curr) => acc + curr.score, 0) / riskScores.length);
-  }, [riskScores]);
+  const globalRiskScore = metrics?.global_risk_score ?? 0;
 
   const activeCampaignsCount = useMemo(() => campaigns.filter(c => c.status === 'active').length, [campaigns]);
 
@@ -100,13 +98,7 @@ export default function Dashboard() {
     return uniqueUsers.size;
   }, [trainings]);
 
-  const maliciousClickRate = useMemo(() => {
-    if (!behavioralEvents || behavioralEvents.length === 0) return "0%";
-    const maliciousClicks = behavioralEvents.filter(e => e.event_type === 'click');
-    const totalEvents = behavioralEvents.filter(e => e.event_type !== 'ignore');
-    if (totalEvents.length === 0) return "0%";
-    return ((maliciousClicks.length / totalEvents.length) * 100).toFixed(1) + "%";
-  }, [behavioralEvents]);
+  const maliciousClickRate = metrics?.malicious_click_rate !== undefined ? `${metrics.malicious_click_rate}%` : "0%";
 
   const dynamicDepartmentData = useMemo(() => {
     const depsRec: Record<string, { score: number, users: number, count: number }> = {};
@@ -233,7 +225,7 @@ export default function Dashboard() {
                 <div className="w-48 h-48 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-5xl font-bold text-white">
-                      {loadingRiskScores ? "..." : globalRiskScore}
+                      {loadingMetrics ? "..." : globalRiskScore}
                     </div>
                     <div className="text-sm text-stone-400">Score de Risque Global</div>
                     <div className="text-xs text-green-400 mt-1">HPRS IA V1.0</div>
@@ -263,7 +255,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <Card className="border-stone-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -292,7 +284,7 @@ export default function Dashboard() {
               </Badge>
             </div>
             <div className="text-2xl font-bold text-stone-900">
-              {loadingRiskScores ? "..." : `${globalRiskScore}%`}
+              {loadingMetrics ? "..." : `${globalRiskScore}%`}
             </div>
             <p className="text-sm text-stone-500">Score de Risque Global</p>
             <Progress value={globalRiskScore} className="mt-3" />
@@ -324,9 +316,26 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="text-2xl font-bold text-stone-900">
-              {loadingEvents ? "..." : maliciousClickRate}
+              {loadingMetrics ? "..." : maliciousClickRate}
             </div>
             <p className="text-sm text-stone-500">Taux de Clics Malveillants</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-stone-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <ShieldAlert className="w-5 h-5 text-emerald-600" />
+              </div>
+              <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">
+                Resilience
+              </Badge>
+            </div>
+            <div className="text-2xl font-bold text-stone-900">
+              {loadingMetrics ? "..." : metrics?.average_report_rate !== undefined ? `${metrics.average_report_rate}%` : "0%"}
+            </div>
+            <p className="text-sm text-stone-500">Avg Report Rate</p>
           </CardContent>
         </Card>
       </div>

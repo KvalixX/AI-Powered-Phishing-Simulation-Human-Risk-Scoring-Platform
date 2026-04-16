@@ -6,25 +6,32 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Training extends Model
+class SentPhishingEmail extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'campaign_id',
         'contact_id',
-        'training_module_id',
+        'subject',
+        'content_html',
+        'tracking_token',
         'status',
-        'assigned_at',
-        'completed_at',
-        'score',
-        'ai_content',
+        'opened_at',
+        'clicked_at',
+        'reported_at',
     ];
 
     protected $casts = [
-        'assigned_at' => 'datetime',
-        'completed_at' => 'datetime',
-        'score' => 'float',
+        'opened_at' => 'datetime',
+        'clicked_at' => 'datetime',
+        'reported_at' => 'datetime',
     ];
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(Campaign::class);
+    }
 
     public function contact(): BelongsTo
     {

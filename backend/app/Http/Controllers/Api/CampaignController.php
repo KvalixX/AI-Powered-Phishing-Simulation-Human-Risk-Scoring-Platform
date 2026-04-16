@@ -6,14 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\CampaignMetrics;
 use App\Models\RLPolicy;
+use App\Services\PhishingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CampaignController extends Controller
 {
+    protected $phishingService;
+
+    public function __construct(PhishingService $phishingService)
+    {
+        $this->phishingService = $phishingService;
+    }
+
     public function index(): JsonResponse
     {
-        $campaigns = Campaign::with(['metrics', 'rlPolicy'])
+        $campaigns = Campaign::with(['metrics', 'rlPolicy', 'sentPhishingEmails'])
             ->where('user_id', auth()->id() ?? 1) // Scope to the current user
             ->get();
         return response()->json($campaigns);
@@ -56,6 +64,11 @@ class CampaignController extends Controller
             ]);
         }
 
+        // Auto-launch if status is active
+        if ($campaign->status === 'active') {
+            $this->phishingService->launchCampaign($campaign);
+        }
+
         return response()->json($campaign->load(['metrics', 'rlPolicy']), 201);
     }
 
@@ -79,7 +92,18 @@ class CampaignController extends Controller
         ]);
 
         $campaign->update($validated);
+
+        if (isset($validated['status']) && $validated['status'] === 'active' && $campaign->started_at === null) {
+            $this->phishingService->launchCampaign($campaign);
+        }
+
         return response()->json($campaign->fresh()->load('metrics'));
+    }
+
+    public function launch(Campaign $campaign): JsonResponse
+    {
+        $this->phishingService->launchCampaign($campaign);
+        return response()->json(['message' => 'Campagne lancée avec succès', 'campaign' => $campaign->fresh()]);
     }
 
     public function destroy(Campaign $campaign): JsonResponse

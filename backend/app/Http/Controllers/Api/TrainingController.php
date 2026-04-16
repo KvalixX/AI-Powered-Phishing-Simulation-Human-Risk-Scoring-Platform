@@ -20,10 +20,9 @@ class TrainingController extends Controller
     {
         $validated = $request->validate([
             'contact_id' => 'required|exists:contacts,id',
-            'type' => 'required|string|in:video,article,quiz',
-            'content' => 'required|string',
-            'recommended_by' => 'nullable|string|max:100',
-            'impact' => 'nullable|numeric',
+            'training_module_id' => 'required|exists:training_modules,id',
+            'status' => 'nullable|string|in:assigned,in_progress,completed',
+            'ai_content' => 'nullable|string',
         ]);
 
         $training = Training::create($validated);
@@ -38,7 +37,8 @@ class TrainingController extends Controller
     public function complete(Training $training): JsonResponse
     {
         $training->update([
-            'completed' => true,
+            'status' => 'completed',
+            'completed_at' => now(),
         ]);
         return response()->json(['message' => 'Training marked as completed', 'training' => $training->fresh()]);
     }

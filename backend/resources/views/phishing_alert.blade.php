@@ -23,6 +23,15 @@
             <p class="text-purple-100">Ne vous inquiétez pas, vous êtes en sécurité.</p>
         </div>
 
+        @if(isset($reported) && $reported)
+        <div class="bg-green-50 border-b border-green-200 p-4 text-center">
+            <p class="text-sm font-semibold text-green-800 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Signalement enregistré avec succès ! Merci pour votre vigilance.
+            </p>
+        </div>
+        @endif
+
         <!-- Content -->
         <div class="p-6">
             <h2 class="text-lg font-semibold text-stone-900 mb-4">Bonjour {{ $contact->first_name }},</h2>
@@ -53,9 +62,18 @@
                 </li>
             </ul>
 
-            <div class="text-center">
+            <div class="text-center mt-8 pt-6 border-t border-stone-100">
                 <p class="text-sm text-stone-500 mb-4">Cet événement a été enregistré dans le cadre de votre programme de formation KIRA.</p>
-                <p class="text-xs text-stone-400">Restez vigilant !</p>
+                
+                <a href="/api/track/report/{{ $campaign->id }}/{{ $contact->id }}" 
+                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    Signaler ce Phishing comme suspect
+                </a>
+                
+                <p class="text-xs text-stone-400 mt-6 italic">Restez vigilant !</p>
             </div>
         </div>
     </div>

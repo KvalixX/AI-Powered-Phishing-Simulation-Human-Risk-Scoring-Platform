@@ -91,6 +91,15 @@ export interface Department {
     contacts_count?: number;
 }
 
+export interface GlobalMetrics {
+    global_risk_score: number;
+    malicious_click_rate: number;
+    average_report_rate: number;
+    training_completion: number;
+    total_contacts: number;
+    total_campaigns: number;
+}
+
 export const api = {
     // Campaigns
     getCampaigns: async (): Promise<Campaign[]> => {
@@ -114,6 +123,10 @@ export const api = {
     },
     resumeCampaign: async (id: number): Promise<Campaign> => {
         const { data } = await apiInstance.post(`/campaigns/${id}/resume`);
+        return data;
+    },
+    launchCampaign: async (id: number): Promise<{ message: string }> => {
+        const { data } = await apiInstance.post(`/campaigns/${id}/launch`);
         return data;
     },
 
@@ -318,6 +331,10 @@ export const api = {
     },
     getDepartmentRisk: async (): Promise<any[]> => {
         const { data } = await apiInstance.get("/analytics/department-risk");
+        return data;
+    },
+    getGlobalMetrics: async (): Promise<GlobalMetrics> => {
+        const { data } = await apiInstance.get("/analytics/global-metrics");
         return data;
     },
 };

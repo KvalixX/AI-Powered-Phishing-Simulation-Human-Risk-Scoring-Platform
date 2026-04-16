@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, Campaign, Contact, RiskScore, BehavioralEvent, TrainingModule, Report, EmailTemplate, Department } from "../lib/api";
+import { api, Campaign, Contact, RiskScore, BehavioralEvent, TrainingModule, Report, EmailTemplate, Department, GlobalMetrics } from "../lib/api";
 
 export function useCampaigns() {
     return useQuery<Campaign[]>({
@@ -54,6 +54,17 @@ export function useResumeCampaign() {
         mutationFn: (id: number) => api.resumeCampaign(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/v1/campaigns"] });
+        },
+    });
+}
+
+export function useLaunchCampaign() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => api.launchCampaign(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["/api/v1/campaigns"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/v1/analytics/global-metrics"] });
         },
     });
 }
@@ -368,6 +379,13 @@ export function useDepartmentRisk() {
     return useQuery({
         queryKey: ["/api/v1/analytics/department-risk"],
         queryFn: api.getDepartmentRisk,
+    });
+}
+
+export function useGlobalMetrics() {
+    return useQuery<GlobalMetrics>({
+        queryKey: ["/api/v1/analytics/global-metrics"],
+        queryFn: api.getGlobalMetrics,
     });
 }
 

@@ -9,3 +9,4 @@ Route::get('/', function () {
 
 // ─── PUBLIC TRACKING ENDPOINT ───────────────────────────────────────────
 Route::get('/track/click/{campaignId}/{contactId}', [TrackingController::class, 'trackClick'])->name('track.click');
+Route::get('/track/report/{campaignId}/{contactId}', [TrackingController::class, 'trackReport'])->name('track.report');

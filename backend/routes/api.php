@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\TrackingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,9 @@ use App\Http\Controllers\Api\AnalyticsController;
 */
 
 Route::prefix('v1')->group(function () {
+    // PUBLIC TRACKING ROUTES
+    Route::get('track/click/{token}', [TrackingController::class, 'click']);
+    Route::get('track/report/{token}', [TrackingController::class, 'report']);
 
     // ─── AUTHENTICATION ─────────────────────────────────────────────────────
     Route::post('register', [AuthController::class, 'register']);
@@ -50,6 +54,7 @@ Route::prefix('v1')->group(function () {
         Route::get('campaigns/{campaign}/rl-policy', [RLPolicyController::class, 'byCampaign']);
         Route::post('campaigns/{campaign}/pause', [CampaignController::class, 'pause']);
         Route::post('campaigns/{campaign}/resume', [CampaignController::class, 'resume']);
+        Route::post('campaigns/{campaign}/launch', [CampaignController::class, 'launch']);
 
         // ─── RISK SCORES ────────────────────────────────────────────────────────
         Route::get('risk-scores', [UserRiskScoreController::class, 'index']);
@@ -105,6 +110,7 @@ Route::prefix('v1')->group(function () {
             Route::get('behavior-heatmap',       [AnalyticsController::class, 'behaviorHeatmap']);
             Route::get('training-effectiveness', [AnalyticsController::class, 'trainingEffectiveness']);
             Route::get('department-risk',        [AnalyticsController::class, 'departmentRisk']);
+            Route::get('global-metrics',         [AnalyticsController::class, 'globalMetrics']);
         });
 
         // ─── AI GENERATION ────────────────────────────────────────────────────────
