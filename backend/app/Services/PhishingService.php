@@ -397,10 +397,22 @@ Consigne : Explique les indices qu'il a manqués dans cet email. Sois encouragea
     private function getSenderEmail(Campaign $campaign, Contact $contact): string
     {
         $tpl = $this->attackTemplates[$campaign->attack_type] ?? $this->attackTemplates['credential_harvesting'];
-        $sender = $tpl['sender'];
+        
+        // Remove accents from templates just in case (e.g. sécurité -> securite)
+        $sender = str_replace('sécurité', 'securite', $tpl['sender']);
         
         $company = $contact->company ?? 'Entreprise';
-        return str_replace(['{company}', '{department}', '{rand}'], [$company, $contact->department, rand(1000, 9999)], $sender);
+        $department = $contact->department ?? 'support';
+        
+        $filledSender = str_replace(['{company}', '{department}', '{rand}'], [$company, $department, rand(1000, 9999)], $sender);
+        
+        // Strip out all accents and convert to lowercase for email safety
+        $safeSender = strtolower(\Illuminate\Support\Str::ascii($filledSender));
+        
+        // Strip out spaces inside the email address string logic
+        $safeSender = str_replace(' ', '', $safeSender);
+
+        return $safeSender;
     }
 
     private function updateUserRiskScore(int $contactId, string $action)
