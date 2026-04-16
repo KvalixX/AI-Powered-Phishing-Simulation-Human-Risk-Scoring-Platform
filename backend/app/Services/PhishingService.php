@@ -66,50 +66,62 @@ class PhishingService
     ];
 
     /**
-     * Generate and store personalized phishing emails for a campaign.
+     * Generate and store personalized phishing emails for a campaign without sending them.
      */
-    public function launchCampaign(Campaign $campaign)
+    public function generateEmailsForCampaign(Campaign $campaign)
     {
-        // 1. Resolve target contacts
         $contacts = $this->resolveTargetContacts($campaign);
 
         foreach ($contacts as $contact) {
+            // Check if already generated for this contact to avoid duplicates
+            if (SentPhishingEmail::where('campaign_id', $campaign->id)->where('contact_id', $contact->id)->exists()) {
+                continue;
+            }
+
             $difficulty = $campaign->difficulty_level;
             $attackType = $campaign->attack_type;
 
-            // 2. Resolve personalized parameters via RL if enabled
             if ($campaign->rl_enabled) {
                 $personalized = $this->rlAgent->getPersonalizedAction($contact, $campaign);
                 $difficulty = $personalized['difficulty'];
                 $attackType = $personalized['attack_type'];
             }
 
-            // 3. Generate content via Gemini
             $generated = $this->generateEmailContent($campaign, $contact, $difficulty, $attackType);
-
-            // 3. Create tracking token
             $token = Str::random(40);
-
-            // 4. Inject tracking URL into HTML
             $contentHtml = $this->injectTrackingUrl($generated['content_html'], $token);
 
-            // 5. Store sent email record
-            $sentRecord = SentPhishingEmail::create([
+            SentPhishingEmail::create([
                 'campaign_id' => $campaign->id,
                 'contact_id' => $contact->id,
                 'subject' => $generated['subject'],
                 'content_html' => $contentHtml,
                 'tracking_token' => $token,
-                'status' => 'sent',
+                'status' => 'pending',
             ]);
+        }
+    }
 
-            // 6. Send actual email via Gmail (SMTP)
+    /**
+     * Send already generated emails for a campaign.
+     */
+    public function sendCampaignEmails(Campaign $campaign)
+    {
+        $pendingEmails = SentPhishingEmail::where('campaign_id', $campaign->id)
+                                            ->where('status', 'pending')
+                                            ->get();
+
+        foreach ($pendingEmails as $emailModel) {
+            $contact = Contact::find($emailModel->contact_id);
+            if (!$contact) continue;
+
             try {
                 Mail::to($contact->email)->send(new SimulationMail(
-                    $generated['subject'],
-                    $contentHtml,
+                    $emailModel->subject,
+                    $emailModel->content_html,
                     $this->getSenderEmail($campaign, $contact)
                 ));
+                $emailModel->update(['status' => 'sent']);
             } catch (\Exception $e) {
                 Log::error("Failed to send simulation email to {$contact->email}: " . $e->getMessage());
             }

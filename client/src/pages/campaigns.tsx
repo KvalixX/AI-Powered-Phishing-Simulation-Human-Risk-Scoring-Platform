@@ -562,6 +562,11 @@ export default function Campaigns() {
                     )}
                   </div>
                   <div className="flex gap-2">
+                    {campaign.status === "draft" && (
+                      <Button variant="outline" size="sm" onClick={() => handleStatusChange(campaign, "active")}>
+                        <Play className="w-4 h-4 mr-1" />Lancer
+                      </Button>
+                    )}
                     {campaign.status === "paused" && (
                       <Button variant="outline" size="sm" onClick={() => handleStatusChange(campaign, "active")}>
                         <Play className="w-4 h-4 mr-1" />Reprendre
@@ -572,7 +577,7 @@ export default function Campaigns() {
                         <RotateCcw className="w-4 h-4 mr-1" />Relancer
                       </Button>
                     )}
-                    {(campaign.status === "completed" || campaign.status === "active") && (
+                    {(campaign.status === "completed" || campaign.status === "active" || campaign.status === "draft") && (
                       <>
                         <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 font-medium"
                           onClick={() => openEdit(campaign)}>

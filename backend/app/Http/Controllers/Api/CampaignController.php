@@ -66,7 +66,10 @@ class CampaignController extends Controller
 
         // Auto-launch if status is active
         if ($campaign->status === 'active') {
-            $this->phishingService->launchCampaign($campaign);
+            $this->phishingService->generateEmailsForCampaign($campaign);
+            $this->phishingService->sendCampaignEmails($campaign);
+        } else {
+            $this->phishingService->generateEmailsForCampaign($campaign);
         }
 
         return response()->json($campaign->load(['metrics', 'rlPolicy']), 201);
@@ -94,7 +97,9 @@ class CampaignController extends Controller
         $campaign->update($validated);
 
         if (isset($validated['status']) && $validated['status'] === 'active' && $campaign->started_at === null) {
-            $this->phishingService->launchCampaign($campaign);
+            $this->phishingService->sendCampaignEmails($campaign);
+        } elseif ($campaign->status === 'draft') {
+            $this->phishingService->generateEmailsForCampaign($campaign);
         }
 
         return response()->json($campaign->fresh()->load('metrics'));
@@ -102,7 +107,7 @@ class CampaignController extends Controller
 
     public function launch(Campaign $campaign): JsonResponse
     {
-        $this->phishingService->launchCampaign($campaign);
+        $this->phishingService->sendCampaignEmails($campaign);
         return response()->json(['message' => 'Campagne lancée avec succès', 'campaign' => $campaign->fresh()]);
     }
 
