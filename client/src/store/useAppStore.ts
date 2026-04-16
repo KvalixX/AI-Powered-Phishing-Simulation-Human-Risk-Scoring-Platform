@@ -16,6 +16,10 @@ export interface CurrentUser {
     email: string;
     role: "admin" | "manager" | "user";
     department: string;
+    position?: string;
+    organization?: string;
+    seniority?: string;
+    language?: string;
     avatar?: string;
 }
 
@@ -42,15 +46,9 @@ export const useAppStore = create<AppState>()(
     persist(
         (set, get) => ({
             // ── Auth ──────────────────────────────────────
-            currentUser: {
-                id: 1,
-                name: "Admin Kira",
-                email: "admin@kirasec.com",
-                role: "admin",
-                department: "Security",
-            },
-            token: null,
-            isAuthenticated: false,
+            currentUser: null,
+            token: localStorage.getItem("auth_token"),
+            isAuthenticated: !!localStorage.getItem("auth_token"),
             setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: !!user }),
             setToken: (token) => {
                 if (token) localStorage.setItem("auth_token", token);
@@ -63,33 +61,8 @@ export const useAppStore = create<AppState>()(
             },
 
             // ── Notifications ─────────────────────────────
-            notifications: [
-                {
-                    id: "1",
-                    type: "warning",
-                    title: "High Risk Alert",
-                    message: "Sales department click rate increased 15%",
-                    timestamp: new Date(),
-                    read: false,
-                },
-                {
-                    id: "2",
-                    type: "success",
-                    title: "Campaign Completed",
-                    message: "Microsoft Login test finished with 89 reports",
-                    timestamp: new Date(Date.now() - 3600000),
-                    read: false,
-                },
-                {
-                    id: "3",
-                    type: "info",
-                    title: "New Phishing Vector",
-                    message: "New Zoom update phishing template detected",
-                    timestamp: new Date(Date.now() - 7200000),
-                    read: true,
-                },
-            ],
-            unreadCount: 2,
+            notifications: [],
+            unreadCount: 0,
 
             addNotification: (notification) => {
                 const newNotif: Notification = {

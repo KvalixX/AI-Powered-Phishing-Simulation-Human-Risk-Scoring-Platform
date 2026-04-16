@@ -14,6 +14,7 @@ class RLPolicy extends Model
 
     protected $fillable = [
         'campaign_id',
+        'contact_id',
         'campaign_params',
         'rewards',
         'state',
@@ -28,5 +29,10 @@ class RLPolicy extends Model
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
+    }
+
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class);
     }
 }

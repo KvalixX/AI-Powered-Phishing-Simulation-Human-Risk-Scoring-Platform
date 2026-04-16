@@ -6,14 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\CampaignMetrics;
 use App\Models\RLPolicy;
+use App\Services\PhishingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CampaignController extends Controller
 {
+    protected $phishingService;
+
+    public function __construct(PhishingService $phishingService)
+    {
+        $this->phishingService = $phishingService;
+    }
+
     public function index(): JsonResponse
     {
-        $campaigns = Campaign::with(['metrics', 'rlPolicy'])->get();
+        $campaigns = Campaign::with(['metrics', 'rlPolicy', 'sentPhishingEmails'])
+            ->where('user_id', auth()->id() ?? 1) // Scope to the current user
+            ->get();
         return response()->json($campaigns);
     }
 
@@ -26,17 +36,37 @@ class CampaignController extends Controller
             'difficulty_level' => 'nullable|in:facile,moyen,difficile,expert',
             'adaptation_params' => 'nullable|array',
             'rl_enabled' => 'nullable|boolean',
+            'target_departments' => 'nullable|array',
+            'target_contacts' => 'nullable|array',
+            'attack_type' => 'nullable|string',
             'started_at' => 'nullable|date',
             'ended_at' => 'nullable|date',
         ]);
 
-        $validated['user_id'] = auth()->id() ?? 1; // Default to user 1 for now
+        $validated['user_id'] = auth()->id() ?? 1;
         $campaign = Campaign::create($validated);
 
-        // Auto-create metrics and RL policy records
-        CampaignMetrics::create(['campaign_id' => $campaign->id]);
+
+        // Auto-create initial metrics
+        CampaignMetrics::create([
+            'campaign_id' => $campaign->id,
+            'ctr' => 0,
+            'precision' => 0,
+            'auc_roc' => 0,
+        ]);
+
         if ($campaign->rl_enabled) {
-            RLPolicy::create(['campaign_id' => $campaign->id, 'rewards' => 0]);
+            RLPolicy::create([
+                'campaign_id' => $campaign->id,
+                'rewards' => 0,
+                'campaign_params' => ['initial' => true],
+                'state' => ['iteration' => 0]
+            ]);
+        }
+
+        // Auto-launch if status is active
+        if ($campaign->status === 'active') {
+            $this->phishingService->launchCampaign($campaign);
         }
 
         return response()->json($campaign->load(['metrics', 'rlPolicy']), 201);
@@ -52,14 +82,28 @@ class CampaignController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'nullable|in:draft,active,completed',
+            'status' => 'nullable|in:draft,active,completed,paused',
             'difficulty_level' => 'nullable|in:facile,moyen,difficile,expert',
             'adaptation_params' => 'nullable|array',
             'rl_enabled' => 'nullable|boolean',
+            'attack_type' => 'nullable|string',
+            'target_departments' => 'nullable|array',
+            'target_contacts' => 'nullable|array',
         ]);
 
         $campaign->update($validated);
+
+        if (isset($validated['status']) && $validated['status'] === 'active' && $campaign->started_at === null) {
+            $this->phishingService->launchCampaign($campaign);
+        }
+
         return response()->json($campaign->fresh()->load('metrics'));
+    }
+
+    public function launch(Campaign $campaign): JsonResponse
+    {
+        $this->phishingService->launchCampaign($campaign);
+        return response()->json(['message' => 'Campagne lancée avec succès', 'campaign' => $campaign->fresh()]);
     }
 
     public function destroy(Campaign $campaign): JsonResponse
@@ -71,5 +115,17 @@ class CampaignController extends Controller
     public function metrics(Campaign $campaign): JsonResponse
     {
         return response()->json($campaign->metrics ?? ['message' => 'No metrics yet']);
+    }
+
+    public function pause(Campaign $campaign): JsonResponse
+    {
+        $campaign->update(['status' => 'paused']);
+        return response()->json(['message' => 'Campagne mise en pause', 'campaign' => $campaign]);
+    }
+
+    public function resume(Campaign $campaign): JsonResponse
+    {
+        $campaign->update(['status' => 'active']);
+        return response()->json(['message' => 'Campagne reprise', 'campaign' => $campaign]);
     }
 }

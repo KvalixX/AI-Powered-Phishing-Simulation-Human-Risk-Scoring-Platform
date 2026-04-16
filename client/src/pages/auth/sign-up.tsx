@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Shield, Lock, Mail, ArrowRight, User, Building, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, ArrowRight, User, Building, CheckCircle2 } from "lucide-react";
+import { useAppStore } from "@/store/useAppStore";
+
+import { authApi } from "@/services/api";
 
 const features = [
   "AI-generated phishing simulations",
@@ -22,10 +26,41 @@ export default function SignUp() {
     password: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { setCurrentUser, setToken } = useAppStore();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => setLoading(false), 1200);
+    
+    try {
+      const { data } = await authApi.register({
+        name: form.name,
+        email: form.email,
+        organization: form.organization,
+        password: form.password,
+        password_confirmation: form.password // Simulate confirmation
+      });
+
+      setToken(data.token);
+      setCurrentUser(data.user);
+      
+      toast({
+        title: "Account created",
+        description: "Your account has been successfully created.",
+      });
+
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || error.message || "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -203,7 +238,7 @@ export default function SignUp() {
           <div className="mt-6 text-center">
             <p className="text-sm text-stone-500 dark:text-stone-400">
               Already have an account?{" "}
-              <Link to="/auth/sign-in" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/sign-in" className="text-blue-600 hover:text-blue-700 font-medium">
                 Sign in
               </Link>
             </p>

@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Shield, Lock, Mail, ArrowRight, Zap, Users, Target } from "lucide-react";
+import { useAppStore } from "@/store/useAppStore";
+
+import { authApi } from "@/services/api";
 
 const stats = [
   { icon: Target, value: "2,400+", label: "Simulations Run" },
@@ -17,10 +21,35 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { setCurrentUser, setToken } = useAppStore();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => setLoading(false), 1200);
+    
+    try {
+      const { data } = await authApi.login({ email, password });
+
+      setToken(data.token);
+      setCurrentUser(data.user);
+      
+      toast({
+        title: "Welcome back",
+        description: "You have successfully signed in.",
+      });
+
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Sign in failed",
+        description: error.response?.data?.message || error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -121,7 +150,7 @@ export default function SignIn() {
                 <Label htmlFor="password" className="text-sm font-medium text-stone-700 dark:text-stone-300">
                   Password
                 </Label>
-                <Link to="/auth/reset-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                <Link to="/reset-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
                   Forgot password?
                 </Link>
               </div>
@@ -165,7 +194,7 @@ export default function SignIn() {
           <div className="mt-6 text-center">
             <p className="text-sm text-stone-500 dark:text-stone-400">
               Don't have an account?{" "}
-              <Link to="/auth/sign-up" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/sign-up" className="text-blue-600 hover:text-blue-700 font-medium">
                 Create account
               </Link>
             </p>

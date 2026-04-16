@@ -69,14 +69,6 @@
   position: relative;
 }
 
-/* 
-Texture Background - You can modify these values:
-- opacity: Overall texture visibility (0.14)
-- mix-blend-mode: How texture blends with background (overlay)
-- background-size: Size of the texture pattern (cover for full coverage)
-- background-position: Position of the texture (center)
-*/
-
 .grain-texture::before {
   content: '';
   position: fixed;
@@ -109,4 +101,104 @@ Texture Background - You can modify these values:
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--foreground));
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  /* Force elements to be visible for print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Hide non-printable UI elements */
+  aside,
+  nav,
+  header,
+  .navbar,
+  .sidebar,
+  .sidebar-trigger,
+  .theme-configurator,
+  .no-print,
+  button,
+  .DropdownMenu,
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  /* Main container visibility for full document flow */
+  html, body {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  /* Target main layout to allow vertical flow */
+  #root, 
+  .flex,
+  .h-screen, 
+  .h-full,
+  main, 
+  .flex-1,
+  .overflow-hidden, 
+  .overflow-y-auto, 
+  .custom-scrollbar {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+    display: block !important;
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Standard Card behavior in print */
+  .Card, 
+  .rounded-lg, 
+  .border,
+  [class*="Card"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 20px !important;
+    border: 1px solid #eee !important;
+    box-shadow: none !important;
+    display: block !important;
+    background: #fff !important;
+  }
+
+  /* Tables must show all rows */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    display: table !important;
+  }
+
+  tr, td, th {
+    page-break-inside: avoid !important;
+  }
+
+  /* Charts should avoid breaking */
+  .recharts-responsive-container {
+    page-break-inside: avoid !important;
+    margin-top: 20px !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* Fix for text colors */
+  p, h1, h2, h3, h4, h5, h6, td, th, span {
+    color: #000 !important;
+  }
+
+  /* Ensure background colors on badges etc */
+  .Badge, [class*="badge"] {
+    border: 1px solid #ccc !important;
+  }
 }

@@ -1,144 +1,76 @@
 # AI-Powered Phishing Simulation & Human Risk Scoring Platform
 
+[![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+
 Une plateforme professionnelle de simulation de phishing alimentée par l'intelligence artificielle pour évaluer, mesurer et améliorer la posture de cybersécurité des organisations.
-
-## Contexte
-
-Les attaques de phishing constituent aujourd'hui l'un des principaux vecteurs de compromission des systèmes d'information. Malgré l'existence de solutions techniques avancées, le facteur humain demeure le maillon le plus vulnérable.
-
-## Objectifs
-
-- **Simuler** des campagnes de phishing réalistes via l'IA générative
-- **Évaluer** le comportement des utilisateurs face aux attaques simulées
-- **Calculer** un score de risque humain dynamique
-- **Proposer** des formations personnalisées automatisées
-- **Fournir** une plateforme visuelle professionnelle adaptée aux démonstrations académiques et industrielles
-
-## Fonctionnalités
-
-### Dashboard Principal
-- Vue d'ensemble des métriques clés (score de risque, campagnes actives, taux de formation)
-- Graphiques d'évolution du risque sur 6 mois
-- Insights IA avec alertes et recommandations
-- Analyse du risque par département
-- Tableau de bord des campagnes récentes
-
-### Gestion des Campagnes
-- Création de campagnes de phishing simulées
-- Templates IA pré-configurés (Email CEO, Fausse Facture, Alert IT, etc.)
-- Suivi en temps réel (envoyés, ouverts, cliqués, signalés)
-- Gestion des statuts (active, planifiée, terminée, brouillon)
-- Difficulté ajustable (facile, moyen, difficile)
-
-### Analyse de Risque
-- Score de risque global et individuel
-- Analyse par département
-- Identification des utilisateurs à haut risque
-- Analyse radar des vecteurs d'attaque
-- Facteurs de risque détaillés
-- Recommandations de formation automatiques
-
-### Formation & Sensibilisation
-- Modules de formation personnalisés
-- Recommandations IA basées sur le profil de risque
-- Suivi des formations assignées
-- Classement des utilisateurs
-- Taux de complétion et scores
-
-### Gestion des Utilisateurs
-- Base de données complète des utilisateurs
-- Profils de risque individuels
-- Historique des tests et formations
-- Tendances de comportement
-- Filtres par département et niveau de risque
-
-### Rapports & Analytics
-- KPIs de performance en temps réel
-- Graphiques d'efficacité des campagnes
-- Templates de rapports (exécutif, département, campagne)
-- Export PDF, Excel
-- Planification de rapports récurrents
-
-## Stack Technique
-
-- **Frontend**: React + TypeScript + Vite
-- **UI Framework**: Tailwind CSS + shadcn/ui
-- **Visualisation**: Recharts
-- **Backend**: Laravel (PHP 8.2+)
-- **Base de données**: MySQL
-- **Authentication**: Laravel Sanctum / JWT
-- **State Management**: React Query
-- **Routing**: React Router DOM (Frontend)
-
-## Installation
-
-```bash
-# Cloner le repository
-git clone https://github.com/KvalixX/AI-Powered-Phishing-Simulation-Human-Risk-Scoring-Platform.git
-
-# Accéder au dossier client
-cd AI-Powered-Phishing-Simulation-Human-Risk-Scoring-Platform/client
-
-# Installer les dépendances
-npm install
-
-# Démarrer le serveur de développement
-npm run dev
-```
-
-## Structure du Projet
-
-```
-backend/                # Application Laravel (API)
-├── app/                    # Logique métier (Models, Controllers)
-├── routes/api.php          # Définition des endpoints API
-├── database/               # Migrations et Seeders MySQL
-└── .env                    # Configuration MySQL / App
-client/                 # Frontend React application
-├── src/
-│   ├── components/         # Composants UI
-│   ├── pages/              # Routes React
-│   ├── services/api.ts     # Consommation de l'API Laravel
-│   └── lib/                # Config & Utils
-└── package.json
-```
-
-## Pages de l'Application
-
-| Page | Route | Description |
-|------|-------|-------------|
-| Dashboard | `/` | Vue d'ensemble avec métriques clés |
-| Campagnes | `/campaigns` | Création et gestion des campagnes |
-| Analyse de Risque | `/risk-analytics` | Scoring et analyse du risque humain |
-| Formation | `/training` | Modules de formation personnalisés |
-| Utilisateurs | `/users` | Gestion des utilisateurs |
-| Rapports | `/reports` | Génération et export de rapports |
-| Connexion | `/auth/sign-in` | Page de connexion |
-| Inscription | `/auth/sign-up` | Page d'inscription |
-
-## Fonctionnalités IA
-
-- **Génération de campagnes**: L'IA crée des emails de phishing réalistes adaptés au contexte de l'organisation
-- **Recommandations personnalisées**: Suggestions de formation basées sur le profil de risque de chaque utilisateur
-- **Insights prédictifs**: Détection des tendances et alertes sur les vulnérabilités émergentes
-- **Scoring dynamique**: Algorithme évolutif prenant en compte le comportement et les progrès
-
-## Captures d'écran
-
-*À ajouter: captures d'écran des principales pages*
-
-## Contribution
-
-Ce projet est développé dans le cadre d'un projet académique/professionnel.
-
-## Licence
-
-© 2024 - Projet de Simulation de Phishing IA. Tous droits réservés.
-
-## Auteur
-
-Développé pour démonstrations académiques et industrielles.
 
 ---
 
-**Note**: Cette plateforme est destinée à des fins éducatives et de sensibilisation à la sécurité. Elle doit être utilisée de manière éthique et responsable.
+## 🇫🇷 Description du Projet
+Cette plateforme permet de simuler des attaques de phishing sophistiquées en utilisant l'IA pour générer des contenus réalistes. Elle calcule un score de risque humain basé sur les interactions des utilisateurs et propose des formations adaptées.
+
+### Fonctionnalités Clés
+- **Dashboard IA**: Visualisation des métriques de risque et insights prédictifs.
+- **Campagnes Dynamiques**: Création d'emails de phishing personnalisés via OpenAI.
+- **Analyse du Risque**: Scoring dynamique par utilisateur et département.
+- **Modules de Formation**: Contenu pédagogique ciblé selon les vulnérabilités détectées.
+
+---
+
+## 🚀 Getting Started (English Guide)
+
+Follow these steps to set up the project locally.
+
+### Prerequisites
+- **PHP** >= 8.2 & **Composer**
+- **Node.js** & **npm**
+- **MySQL** Database
+- **OpenAI API Key** (for AI features)
+
+### 1. Repository Setup
+```bash
+git clone https://github.com/KvalixX/AI-Powered-Phishing-Simulation-Human-Risk-Scoring-Platform.git
+cd AI-Powered-Phishing-Simulation-Human-Risk-Scoring-Platform
+```
+
+### 2. Backend Setup (Laravel)
+```bash
+cd backend
+composer install
+copy .env.example .env
+```
+**Important**: Open `.env` and configure:
+- `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
+- `OPENAI_API_KEY` (Your OpenAI key)
+
+Then run:
+```bash
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
+The API will be available at `http://localhost:8000`.
+
+### 3. Frontend Setup (React)
+```bash
+cd ../client
+npm install
+npm run dev
+```
+The application will be available at `http://localhost:5173`.
+
+---
+
+## 📂 Project Structure
+- `backend/`: Laravel 11 API (Controllers, Models, Migrations).
+- `client/`: React + TypeScript frontend (Vite, Tailwind, Shadcn/UI).
+- `server/`: Additional server-side utilities (if any).
+
+## 🛡 Security Note
+This platform is for **educational and authorized security testing purposes only**. Improper use is strictly prohibited.
+
+---
+© 2024 - Developed for Academic and Professional Cybersecurity Demonstrations.
