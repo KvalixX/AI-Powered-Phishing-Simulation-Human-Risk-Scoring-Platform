@@ -259,26 +259,39 @@ Exemple de format attendu :
   \"content_html\": \"<div style='font-family: sans-serif;...'>Bonjour... <br><br> <a href='#' style='...'>Confirmer</a></div>\"
 }";
 
-        try {
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={$apiKey}";
-            $response = Http::post($url, [
-                'contents' => [['parts' => [['text' => $prompt]]]],
-                'generationConfig' => ['responseMimeType' => 'application/json']
-            ]);
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={$apiKey}";
+        
+        $maxRetries = 2;
+        $attempt = 0;
 
-            if ($response->successful()) {
-                $text = $response->json()['candidates'][0]['content']['parts'][0]['text'];
-                // Clean up potential markdown codeblocks and whitespace
-                $text = preg_replace('/^```json\s*/', '', $text);
-                $text = preg_replace('/```$/', '', trim($text));
+        while ($attempt <= $maxRetries) {
+            try {
+                $response = Http::post($url, [
+                    'contents' => [['parts' => [['text' => $prompt]]]],
+                    'generationConfig' => ['responseMimeType' => 'application/json']
+                ]);
 
-                $parsed = json_decode($text, true);
-                if ($parsed && isset($parsed['subject']) && isset($parsed['content_html'])) {
-                    return $parsed;
+                if ($response->successful()) {
+                    $text = $response->json()['candidates'][0]['content']['parts'][0]['text'];
+                    
+                    // Clean up potential markdown codeblocks and whitespace
+                    $text = preg_replace('/^```json\s*/', '', $text);
+                    $text = preg_replace('/```$/', '', trim($text));
+
+                    $parsed = json_decode($text, true);
+                    if ($parsed && isset($parsed['subject']) && isset($parsed['content_html'])) {
+                        return $parsed;
+                    }
+                } elseif ($response->status() === 429) {
+                    // Rate limit exceeded (Too Many Requests). Wait and retry.
+                    sleep(4);
+                } else {
+                    Log::error("Gemini API Error: " . $response->status() . " - " . $response->body());
                 }
+            } catch (\Exception $e) {
+                Log::error("PhishingService Gemini Exception: " . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            Log::error("PhishingService Gemini Error: " . $e->getMessage());
+            $attempt++;
         }
 
         return [
