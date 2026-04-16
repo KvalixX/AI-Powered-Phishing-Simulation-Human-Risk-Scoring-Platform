@@ -233,21 +233,34 @@ class PhishingService
         $attackDesc = $attackConfig['lure'] ?? 'Invente un scénario crédible.';
 
         $difficultyInstructions = match ($difficulty) {
-            'facile' => "Fais des fautes, sois générique.",
-            'moyen' => "Professionnel avec quelques erreurs.",
-            'difficile' => "Très réaliste, utilise le département.",
-            'expert' => "Indétectable, hautement manipulatoire.",
+            'facile' => "Sois très générique (ex: 'Cher client' ou 'Utilisateur'). Fais des fautes d'orthographe ou de grammaire évidentes. Utilise une urgence basique sans justification solide. Le design doit sembler basique, presque amateur.",
+            'moyen' => "Apparence professionnelle mais avec quelques légères incohérences. Le ton est corporatif. Crée un prétexte standard.",
+            'difficile' => "Très réaliste et ciblé (Spear Phishing). Utilise explicitement le prénom, département ({$contact->department}) et poste ({$contact->position}) de la cible. Le design HTML doit être soigné et imiter parfaitement une communication d'entreprise interne.",
+            'expert' => "Indétectable, extrêmement sophistiqué et hautement manipulatoire. Imite une autorité ou un outil incontournable de l'entreprise. Utilise un design HTML impeccable et des déclencheurs psychologiques puissants (peur, obéissance). Aucune faute. Parle d'un dossier ou d'une procédure critique.",
             default => "Réaliste."
         };
 
-        $prompt = "Génère un email de phishing simulé.
-Cible: {$contact->first_name} {$contact->last_name} ({$contact->position} @ " . ($contact->company ?? 'Entreprise') . ")
-Type: {$attackLabel}
-Difficulté: {$difficulty} ({$difficultyInstructions})
-Consigne: Répond uniquement en JSON { \"subject\": \"...\", \"content_html\": \"...\" }";
+        $prompt = "Tu es un expert en Red Teaming chargé de rédiger un email de phishing simulé (TEST AUTORISÉ) pour l'entraînement des employés. Tu dois générer un contenu ultra-réaliste.
+
+CIBLE : {$contact->first_name} {$contact->last_name} | Poste : {$contact->position} | Département : {$contact->department} | Entreprise : " . ($contact->company ?? 'Entreprise') . "
+TYPE D'ATTAQUE : {$attackLabel} - {$attackDesc}
+NIVEAU DE DIFFICULTÉ : {$difficulty} -> DIRECTIVE : {$difficultyInstructions}
+
+INSTRUCTIONS TECHNIQUES STRICTES :
+1. Renvoie UNIQUEMENT un JSON valide contenant 'subject' (l'objet du mail) et 'content_html' (le corps du mail).
+2. 'content_html' DOIT être du HTML sémantique, propre et stylisé avec du CSS inline (styles professionnels, couleurs de l'entreprise ou d'outils connus). Ne mets pas de Markdown autour.
+3. Le lien ou bouton d'action principal (Call To Action) DOIT OBLIGATOIREMENT avoir l'attribut href=\"#\". Ne mets aucune autre URL, c'est indispensable pour notre système de tracking.
+4. L'email doit être complet : salutations, corps persuasif, signature d'un expéditeur crédible, et footer éventuel.
+5. Adapte parfaitement le niveau de langage et la subtilité à la difficulté demandée !
+
+Exemple de format attendu :
+{
+  \"subject\": \"Action requise : ...\",
+  \"content_html\": \"<div style='font-family: sans-serif;...'>Bonjour... <br><br> <a href='#' style='...'>Confirmer</a></div>\"
+}";
 
         try {
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}";
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={$apiKey}";
             $response = Http::post($url, [
                 'contents' => [['parts' => [['text' => $prompt]]]],
                 'generationConfig' => ['responseMimeType' => 'application/json']
@@ -255,7 +268,14 @@ Consigne: Répond uniquement en JSON { \"subject\": \"...\", \"content_html\": \
 
             if ($response->successful()) {
                 $text = $response->json()['candidates'][0]['content']['parts'][0]['text'];
-                return json_decode($text, true);
+                // Clean up potential markdown codeblocks and whitespace
+                $text = preg_replace('/^```json\s*/', '', $text);
+                $text = preg_replace('/```$/', '', trim($text));
+
+                $parsed = json_decode($text, true);
+                if ($parsed && isset($parsed['subject']) && isset($parsed['content_html'])) {
+                    return $parsed;
+                }
             }
         } catch (\Exception $e) {
             Log::error("PhishingService Gemini Error: " . $e->getMessage());
