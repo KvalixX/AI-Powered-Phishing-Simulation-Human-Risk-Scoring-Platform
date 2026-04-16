@@ -7,7 +7,7 @@ import {
   Target, Plus, Search, Filter, Play, Pause, RotateCcw, Trash2,
   Edit3, MoreVertical as ActionsIcon, Calendar, Users, Mail,
   MousePointer, CheckCircle2, Clock, Brain, Wand2, Sparkles,
-  FileText, Download, Eye, Lock, Zap, Rocket
+  FileText, Download, Eye, Lock, Zap, Rocket, Loader2
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -293,9 +293,11 @@ export default function Campaigns() {
   const handleSubmit = async () => {
     try {
       if (selectedCampaign) {
+        toast({ title: "Mise à jour...", description: "L'IA modifie et génère les brouillons d'emails en arrière-plan..." });
         await updateCampaign.mutateAsync({ id: selectedCampaign.id, data: formData });
         toast({ title: "Succès", description: "Campagne mise à jour avec succès." });
       } else {
+        toast({ title: "Création en cours...", description: "L'IA génère les brouillons d'emails pour chaque utilisateur ciblé. Cela peut prendre quelques secondes..." });
         await createCampaign.mutateAsync(formData);
         toast({ title: "Succès", description: "Campagne créée avec succès." });
       }
@@ -804,7 +806,14 @@ export default function Campaigns() {
                   onClick={handleSubmit}
                   disabled={createCampaign.isPending || updateCampaign.isPending}
                 >
-                  {selectedCampaign ? "Mettre à jour" : "Créer la campagne"}
+                  {(createCampaign.isPending || updateCampaign.isPending) ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Génération en cours...
+                    </>
+                  ) : (
+                    selectedCampaign ? "Mettre à jour" : "Créer la campagne"
+                  )}
                 </Button>
               )}
             </div>
