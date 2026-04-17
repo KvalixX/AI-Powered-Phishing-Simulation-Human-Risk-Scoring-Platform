@@ -31,6 +31,7 @@ Route::prefix('v1')->group(function () {
     // PUBLIC TRACKING ROUTES
     Route::get('track/click/{token}', [TrackingController::class, 'click']);
     Route::get('track/report/{token}', [TrackingController::class, 'report']);
+    Route::get('track/training/{training}', [TrackingController::class, 'completeTraining']);
 
     // ─── AUTHENTICATION ─────────────────────────────────────────────────────
     Route::post('register', [AuthController::class, 'register']);

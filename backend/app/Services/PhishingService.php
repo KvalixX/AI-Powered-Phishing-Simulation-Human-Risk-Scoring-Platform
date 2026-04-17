@@ -381,9 +381,19 @@ Exemple de format attendu :
                 'ai_content' => $aiContent,
             ]);
 
-            // 3. Send the AI-generated training article immediately
+            // 3. Inject validation link into content for email ONLY
+            $confirmUrl = url("/api/v1/track/training/{$training->id}");
+            $emailContent = $aiContent . "
+                <div style='margin-top: 30px; padding: 20px; border: 2px solid #2563eb; border-radius: 8px; background-color: #f0f7ff; text-align: center; font-family: sans-serif;'>
+                    <h3 style='margin: 0 0 10px 0; color: #1e40af;'>Validation de formation</h3>
+                    <p style='margin: 0 0 15px 0; color: #1e3a8a; font-size: 14px;'>Veuillez confirmer que vous avez bien lu et compris les consignes de sécurité ci-dessus.</p>
+                    <a href='{$confirmUrl}' style='display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;'>J'ai compris cette formation</a>
+                </div>
+            ";
+
+            // 4. Send the AI-generated training article immediately
             try {
-                Mail::to($contact->email)->send(new TrainingMail($aiContent));
+                Mail::to($contact->email)->send(new TrainingMail($emailContent));
             } catch (\Exception $e) {
                 Log::error("Failed to send training email to {$contact->email}: " . $e->getMessage());
             }

@@ -58,4 +58,20 @@ class TrackingController extends Controller
             return response()->json(['error' => 'Token invalide'], 404);
         }
     }
+
+    /**
+     * Mark training as completed from email link.
+     */
+    public function completeTraining(\App\Models\Training $training)
+    {
+        $training->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Merci d\'avoir complété votre formation de sensibilisation.',
+            'status' => 'COMPLETED'
+        ]);
+    }
 }
