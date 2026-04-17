@@ -32,7 +32,7 @@ class CampaignController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'nullable|in:draft,active,completed',
+            'status' => 'nullable|in:draft,active,completed,scheduled',
             'difficulty_level' => 'nullable|in:facile,moyen,difficile,expert',
             'adaptation_params' => 'nullable|array',
             'rl_enabled' => 'nullable|boolean',
@@ -54,6 +54,9 @@ class CampaignController extends Controller
             'precision' => 0,
             'auc_roc' => 0,
         ]);
+
+        // Pre-generate emails for preview
+        app(\App\Services\PhishingService::class)->generateEmailsForCampaign($campaign);
 
         if ($campaign->rl_enabled) {
             RLPolicy::create([
@@ -85,7 +88,7 @@ class CampaignController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'nullable|in:draft,active,completed,paused',
+            'status' => 'nullable|in:draft,active,completed,paused,scheduled',
             'difficulty_level' => 'nullable|in:facile,moyen,difficile,expert',
             'adaptation_params' => 'nullable|array',
             'rl_enabled' => 'nullable|boolean',

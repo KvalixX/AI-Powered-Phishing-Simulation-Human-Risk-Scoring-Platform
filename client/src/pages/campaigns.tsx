@@ -7,8 +7,14 @@ import {
   Target, Plus, Search, Filter, Play, Pause, RotateCcw, Trash2,
   Edit3, MoreVertical as ActionsIcon, Calendar, Users, Mail,
   MousePointer, CheckCircle2, Clock, Brain, Wand2, Sparkles,
-  FileText, Download, Eye, Lock, Zap, Rocket, Loader2
+  FileText, Download, Eye, Lock, Zap, Rocket, Loader2, Info
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -40,33 +46,33 @@ import { Campaign } from "@/lib/api";
 // ── Attack types (email-focused) ──────────────────────────────────────────────
 const EMAIL_ATTACK_TYPES = [
   { value: "credential_harvesting", label: "🔑 Credential Harvesting", desc: "Vol d'identifiants via faux portail" },
-  { value: "spear_phishing",        label: "🎯 Spear Phishing Ciblé",  desc: "Email personnalisé ciblant une personne" },
-  { value: "ceo_fraud",             label: "👑 Fraude au Président (BEC)", desc: "Usurpation du PDG pour virement urgent" },
-  { value: "fake_invoice",          label: "🧾 Fausse Facture Fournisseur", desc: "Validation urgente d'une facture" },
-  { value: "it_password_reset",     label: "💻 Réinitialisation Mot de Passe IT", desc: "Expiration de mot de passe réseau" },
-  { value: "payroll_update",        label: "💰 Mise à Jour Bulletin de Paie", desc: "Anomalie détectée sur la paie" },
-  { value: "fake_delivery",         label: "📦 Faux Colis / Livraison", desc: "Frais de douane pour colis bloqué" },
-  { value: "microsoft_365",         label: "🪟 Alerte Microsoft 365",  desc: "Connexion suspecte sur compte Microsoft" },
-  { value: "google_workspace",      label: "🔵 Alerte Google Workspace", desc: "Suspension de compte Google imminente" },
-  { value: "gift_card",             label: "🎁 Escroquerie Cartes Cadeaux", desc: "Récompense RH via carte cadeau" },
-  { value: "vpn_access",            label: "🔐 Accès VPN Compromis",   desc: "Reconfiguration VPN requise" },
-  { value: "shared_document",       label: "📄 Document Partagé",       desc: "Fichier partagé SharePoint/Drive" },
-  { value: "social_engineering",    label: "🛠️ Social Engineering IT",  desc: "Intervention technique à distance" },
+  { value: "spear_phishing", label: "🎯 Spear Phishing Ciblé", desc: "Email personnalisé ciblant une personne" },
+  { value: "ceo_fraud", label: "👑 Fraude au Président (BEC)", desc: "Usurpation du PDG pour virement urgent" },
+  { value: "fake_invoice", label: "🧾 Fausse Facture Fournisseur", desc: "Validation urgente d'une facture" },
+  { value: "it_password_reset", label: "💻 Réinitialisation Mot de Passe IT", desc: "Expiration de mot de passe réseau" },
+  { value: "payroll_update", label: "💰 Mise à Jour Bulletin de Paie", desc: "Anomalie détectée sur la paie" },
+  { value: "fake_delivery", label: "📦 Faux Colis / Livraison", desc: "Frais de douane pour colis bloqué" },
+  { value: "microsoft_365", label: "🪟 Alerte Microsoft 365", desc: "Connexion suspecte sur compte Microsoft" },
+  { value: "google_workspace", label: "🔵 Alerte Google Workspace", desc: "Suspension de compte Google imminente" },
+  { value: "gift_card", label: "🎁 Escroquerie Cartes Cadeaux", desc: "Récompense RH via carte cadeau" },
+  { value: "vpn_access", label: "🔐 Accès VPN Compromis", desc: "Reconfiguration VPN requise" },
+  { value: "shared_document", label: "📄 Document Partagé", desc: "Fichier partagé SharePoint/Drive" },
+  { value: "social_engineering", label: "🛠️ Social Engineering IT", desc: "Intervention technique à distance" },
 ];
 
 const difficultyColors = {
-  facile:   "bg-green-100 text-green-700 border-green-200",
-  moyen:    "bg-yellow-100 text-yellow-700 border-yellow-200",
-  difficile:"bg-orange-100 text-orange-700 border-orange-200",
-  expert:   "bg-red-100 text-red-700 border-red-200"
+  facile: "bg-green-100 text-green-700 border-green-200",
+  moyen: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  difficile: "bg-orange-100 text-orange-700 border-orange-200",
+  expert: "bg-red-100 text-red-700 border-red-200"
 } as const;
 
 const statusColors = {
-  active:    "bg-green-100 text-green-700",
+  active: "bg-green-100 text-green-700",
   completed: "bg-blue-100 text-blue-700",
   scheduled: "bg-amber-100 text-amber-700",
-  draft:     "bg-gray-100 text-gray-700",
-  paused:    "bg-orange-100 text-orange-700"
+  draft: "bg-gray-100 text-gray-700",
+  paused: "bg-orange-100 text-orange-700"
 } as const;
 
 /** Campaigns that are "launched" = read-only editing */
@@ -75,18 +81,18 @@ const LAUNCHED_STATUSES: Campaign["status"][] = ["active", "completed"];
 // ── Attack template definitions (mirrors AIController.php) ───────────────────
 const ATTACK_TEMPLATES: Record<string, { label: string; subject: string; lure: string; cta: string; icon: string; color: string }> = {
   credential_harvesting: { label: "Credential Harvesting", icon: "🔑", color: "#3b82f6", subject: "Action requise : vérifiez vos identifiants de connexion", lure: "votre accès au portail va être suspendu si vous ne confirmez pas vos identifiants dans les prochaines 24 heures", cta: "Vérifier mes identifiants" },
-  spear_phishing:        { label: "Spear Phishing Ciblé",  icon: "🎯", color: "#7c3aed", subject: "Message personnel de votre directeur",                     lure: "j'ai besoin que vous examiniez ce document confidentiel avant la réunion de demain", cta: "Ouvrir le document sécurisé" },
-  ceo_fraud:             { label: "Fraude au Président",   icon: "👑", color: "#dc2626", subject: "CONFIDENTIEL – Demande urgente du PDG",                    lure: "je suis en réunion stratégique et j'ai besoin que vous effectuiez un virement discret avant 17h", cta: "Accéder aux instructions sécurisées" },
-  fake_invoice:          { label: "Fausse Facture",        icon: "🧾", color: "#d97706", subject: "Facture en attente de validation – Échéance dépassée",    lure: "une facture fournisseur est en attente de validation urgente dans votre espace comptabilité", cta: "Valider la facture" },
-  it_password_reset:     { label: "Réinitialisation IT",   icon: "💻", color: "#0891b2", subject: "Votre mot de passe expire dans 2 heures – Action requise", lure: "votre mot de passe réseau expire aujourd'hui. Pour éviter la perte d'accès, veuillez le renouveler immédiatement", cta: "Renouveler mon mot de passe" },
-  payroll_update:        { label: "Mise à Jour Paie",      icon: "💰", color: "#16a34a", subject: "Erreur détectée sur votre bulletin de paie",               lure: "notre service RH a détecté une anomalie sur votre bulletin de paie du mois en cours", cta: "Vérifier mon bulletin de paie" },
-  fake_delivery:         { label: "Faux Colis",            icon: "📦", color: "#ea580c", subject: "Votre colis est en attente – Frais de douane requis",     lure: "un colis à votre nom est bloqué en douane. Des frais de 2,50 € sont requis pour valider la livraison", cta: "Payer les frais et recevoir mon colis" },
-  microsoft_365:         { label: "Alerte Microsoft 365",  icon: "🪟", color: "#2563eb", subject: "Connexion suspecte détectée sur votre compte Microsoft",  lure: "une connexion inhabituelle a été détectée depuis Moscou, Russie. Si ce n'est pas vous, sécurisez votre compte", cta: "Sécuriser mon compte Microsoft" },
-  google_workspace:      { label: "Alerte Google Workspace",icon: "🔵", color: "#1d4ed8", subject: "Votre compte Google sera désactivé – Vérification requise",lure: "votre compte Google Workspace a été signalé pour activité non-conforme. Vérifiez votre identité pour éviter la suspension", cta: "Vérifier mon identité Google" },
-  gift_card:             { label: "Cartes Cadeaux",        icon: "🎁", color: "#9333ea", subject: "Félicitations ! Vous avez été sélectionné(e)",            lure: "vous avez été sélectionné(e) par le service RH pour recevoir une carte cadeau de 150 € en récompense de votre performance", cta: "Réclamer ma récompense" },
-  vpn_access:            { label: "Accès VPN Compromis",   icon: "🔐", color: "#475569", subject: "Votre accès VPN a été révoqué – Reconfiguration nécessaire",lure: "suite à une mise à jour de sécurité, votre configuration VPN doit être réinitialisée pour maintenir votre accès à distance", cta: "Reconfigurer mon VPN" },
-  shared_document:       { label: "Document Partagé",      icon: "📄", color: "#0369a1", subject: "Un collègue a partagé un fichier avec vous",               lure: "votre collègue a partagé un document confidentiel qui requiert votre validation avant ce soir", cta: "Consulter le document partagé" },
-  social_engineering:    { label: "Social Engineering IT", icon: "🛠️", color: "#7f1d1d", subject: "Support IT : intervention requise sur votre poste",       lure: "notre équipe de sécurité a détecté un logiciel non autorisé sur votre poste de travail. Merci de nous contacter", cta: "Contacter le support IT" },
+  spear_phishing: { label: "Spear Phishing Ciblé", icon: "🎯", color: "#7c3aed", subject: "Message personnel de votre directeur", lure: "j'ai besoin que vous examiniez ce document confidentiel avant la réunion de demain", cta: "Ouvrir le document sécurisé" },
+  ceo_fraud: { label: "Fraude au Président", icon: "👑", color: "#dc2626", subject: "CONFIDENTIEL – Demande urgente du PDG", lure: "je suis en réunion stratégique et j'ai besoin que vous effectuiez un virement discret avant 17h", cta: "Accéder aux instructions sécurisées" },
+  fake_invoice: { label: "Fausse Facture", icon: "🧾", color: "#d97706", subject: "Facture en attente de validation – Échéance dépassée", lure: "une facture fournisseur est en attente de validation urgente dans votre espace comptabilité", cta: "Valider la facture" },
+  it_password_reset: { label: "Réinitialisation IT", icon: "💻", color: "#0891b2", subject: "Votre mot de passe expire dans 2 heures – Action requise", lure: "votre mot de passe réseau expire aujourd'hui. Pour éviter la perte d'accès, veuillez le renouveler immédiatement", cta: "Renouveler mon mot de passe" },
+  payroll_update: { label: "Mise à Jour Paie", icon: "💰", color: "#16a34a", subject: "Erreur détectée sur votre bulletin de paie", lure: "notre service RH a détecté une anomalie sur votre bulletin de paie du mois en cours", cta: "Vérifier mon bulletin de paie" },
+  fake_delivery: { label: "Faux Colis", icon: "📦", color: "#ea580c", subject: "Votre colis est en attente – Frais de douane requis", lure: "un colis à votre nom est bloqué en douane. Des frais de 2,50 € sont requis pour valider la livraison", cta: "Payer les frais et recevoir mon colis" },
+  microsoft_365: { label: "Alerte Microsoft 365", icon: "🪟", color: "#2563eb", subject: "Connexion suspecte détectée sur votre compte Microsoft", lure: "une connexion inhabituelle a été détectée depuis Moscou, Russie. Si ce n'est pas vous, sécurisez votre compte", cta: "Sécuriser mon compte Microsoft" },
+  google_workspace: { label: "Alerte Google Workspace", icon: "🔵", color: "#1d4ed8", subject: "Votre compte Google sera désactivé – Vérification requise", lure: "votre compte Google Workspace a été signalé pour activité non-conforme. Vérifiez votre identité pour éviter la suspension", cta: "Vérifier mon identité Google" },
+  gift_card: { label: "Cartes Cadeaux", icon: "🎁", color: "#9333ea", subject: "Félicitations ! Vous avez été sélectionné(e)", lure: "vous avez été sélectionné(e) par le service RH pour recevoir une carte cadeau de 150 € en récompense de votre performance", cta: "Réclamer ma récompense" },
+  vpn_access: { label: "Accès VPN Compromis", icon: "🔐", color: "#475569", subject: "Votre accès VPN a été révoqué – Reconfiguration nécessaire", lure: "suite à une mise à jour de sécurité, votre configuration VPN doit être réinitialisée pour maintenir votre accès à distance", cta: "Reconfigurer mon VPN" },
+  shared_document: { label: "Document Partagé", icon: "📄", color: "#0369a1", subject: "Un collègue a partagé un fichier avec vous", lure: "votre collègue a partagé un document confidentiel qui requiert votre validation avant ce soir", cta: "Consulter le document partagé" },
+  social_engineering: { label: "Social Engineering IT", icon: "🛠️", color: "#7f1d1d", subject: "Support IT : intervention requise sur votre poste", lure: "notre équipe de sécurité a détecté un logiciel non autorisé sur votre poste de travail. Merci de nous contacter", cta: "Contacter le support IT" },
 };
 
 /**
@@ -135,7 +141,7 @@ function generateEmailLocally(
     <span style="font-size:28px;">${icon}</span>
     <div style="flex:1;">
       <div style="color:#fff;font-size:17px;font-weight:700;">${tpl.label}</div>
-      <div style="color:rgba(255,255,255,0.75);font-size:12px;">noreply@${company.toLowerCase().replace(/\s/g,"-")}-secure.com</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:12px;">noreply@${company.toLowerCase().replace(/\s/g, "-")}-secure.com</div>
     </div>
     ${urgencyBadge}
   </div>
@@ -167,38 +173,40 @@ export default function Campaigns() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [searchQuery,     setSearchQuery]     = useState("");
-  const [selectedTab,     setSelectedTab]     = useState("all");
-  const [difficultyFilter,setDifficultyFilter]= useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTab, setSelectedTab] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
 
   // Dialog states
-  const [showDialog,        setShowDialog]      = useState(false);
-  const [dialogMode,        setDialogMode]      = useState<"create" | "edit" | "view">("create");
-  const [selectedCampaign,  setSelectedCampaign]= useState<Campaign | null>(null);
-  const [isDeleteDialogOpen,setIsDeleteDialogOpen] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"create" | "edit" | "view">("create");
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isResendDialogOpen, setIsResendDialogOpen] = useState(false);
+  const [campaignToLaunch, setCampaignToLaunch] = useState<Campaign | null>(null);
 
   // Form
-  const [formData,   setFormData]   = useState<Partial<Campaign>>({
+  const [formData, setFormData] = useState<Partial<Campaign>>({
     name: "", difficulty_level: "moyen", status: "draft",
     target_departments: [], target_contacts: []
   });
-  const [targetMode, setTargetMode] = useState<"all"|"departments"|"contacts">("all");
-  const [aiContext,  setAiContext]  = useState("");
+  const [targetMode, setTargetMode] = useState<"all" | "departments" | "contacts">("all");
+  const [aiContext, setAiContext] = useState("");
 
   // AI preview state
-  const [aiContent,  setAiContent]  = useState<{ subject: string; content_html: string } | null>(null);
+  const [aiContent, setAiContent] = useState<{ subject: string; content_html: string } | null>(null);
   const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
   const [previewError, setPreviewError] = useState(false);
 
   // Hooks
   const { data: campaigns = [], isLoading } = useCampaigns();
-  const createCampaign        = useCreateCampaign();
-  const updateCampaign        = useUpdateCampaign();
-  const deleteCampaign        = useDeleteCampaign();
+  const createCampaign = useCreateCampaign();
+  const updateCampaign = useUpdateCampaign();
+  const deleteCampaign = useDeleteCampaign();
   const pauseCampaignMutation = usePauseCampaign();
-  const resumeCampaignMutation= useResumeCampaign();
-  const { data: contacts = [] }  = useContacts();
-  const generateAi             = useGeneratePhishingTemplate();
+  const resumeCampaignMutation = useResumeCampaign();
+  const { data: contacts = [] } = useContacts();
+  const generateAi = useGeneratePhishingTemplate();
   const launchCampaignMutation = useLaunchCampaign();
 
   const isReadOnly = dialogMode === "view";
@@ -218,7 +226,7 @@ export default function Campaigns() {
     }, 300);
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.attack_type, formData.difficulty_level, formData.name, aiContext]);
 
   const autoGeneratePreview = async () => {
@@ -235,11 +243,11 @@ export default function Campaigns() {
         if (rep) previewContactId = rep.id;
       }
       const res = await generateAi.mutateAsync({
-        contact_id:    previewContactId,
-        context:       aiContext,
-        difficulty:    formData.difficulty_level as string,
+        contact_id: previewContactId,
+        context: aiContext,
+        difficulty: formData.difficulty_level as string,
         campaign_name: formData.name,
-        attack_type:   formData.attack_type as string,
+        attack_type: formData.attack_type as string,
       });
       setAiContent(res);
     } catch {
@@ -266,12 +274,12 @@ export default function Campaigns() {
     const launched = LAUNCHED_STATUSES.includes(camp.status as any);
     setSelectedCampaign(camp);
     setFormData({
-      name:               camp.name,
-      difficulty_level:   camp.difficulty_level,
-      status:             camp.status,
+      name: camp.name,
+      difficulty_level: camp.difficulty_level,
+      status: camp.status,
       target_departments: camp.target_departments ?? [],
-      target_contacts:    camp.target_contacts ?? [],
-      attack_type:        camp.attack_type,
+      target_contacts: camp.target_contacts ?? [],
+      attack_type: camp.attack_type,
     });
     setAiContext("");
     setTargetMode("all");
@@ -343,17 +351,17 @@ export default function Campaigns() {
       await launchCampaignMutation.mutateAsync(campaign.id);
       toast({ title: "Succès", description: "La campagne a été lancée avec succès !" });
     } catch (err: any) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erreur", 
-        description: err.response?.data?.error || "Une erreur est survenue lors du lancement." 
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: err.response?.data?.error || "Une erreur est survenue lors du lancement."
       });
     }
   };
 
   const filteredCampaigns = useMemo(() => campaigns.filter(c => {
-    const matchesSearch     = c.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTab        = selectedTab === "all" || c.status === selectedTab;
+    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTab = selectedTab === "all" || c.status === selectedTab;
     const matchesDifficulty = difficultyFilter === "all" || c.difficulty_level === difficultyFilter;
     return matchesSearch && matchesTab && matchesDifficulty;
   }), [campaigns, searchQuery, selectedTab, difficultyFilter]);
@@ -472,11 +480,11 @@ export default function Campaigns() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <Badge variant="secondary" className={statusColors[campaign.status as keyof typeof statusColors] ?? ""}>
-                          {campaign.status === "active"    ? "Active"
-                          : campaign.status === "completed" ? "Terminée"
-                          : campaign.status === "scheduled" ? "Planifiée"
-                          : campaign.status === "draft"     ? "Brouillon"
-                          : "En pause"}
+                          {campaign.status === "active" ? "Active"
+                            : campaign.status === "completed" ? "Terminée"
+                              : campaign.status === "scheduled" ? "Planifiée"
+                                : campaign.status === "draft" ? "Brouillon"
+                                  : "En pause"}
                         </Badge>
                         <Badge variant="outline" className={difficultyColors[campaign.difficulty_level as keyof typeof difficultyColors] ?? ""}>
                           {campaign.difficulty_level.charAt(0).toUpperCase() + campaign.difficulty_level.slice(1)}
@@ -505,12 +513,21 @@ export default function Campaigns() {
                       <DropdownMenuItem onClick={() => openEdit(campaign)}>
                         <Edit3 className="w-4 h-4 mr-2" />Modifier
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(campaign, "active")}>
-                        <Play className="w-4 h-4 mr-2" />Activer
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(campaign, "paused")}>
-                        <Pause className="w-4 h-4 mr-2" />Pause
-                      </DropdownMenuItem>
+                      
+                      {campaign.status === "active" ? (
+                        <DropdownMenuItem onClick={() => handleStatusChange(campaign, "paused")}>
+                          <Pause className="w-4 h-4 mr-2" />Pause
+                        </DropdownMenuItem>
+                      ) : (campaign.status === "paused" || campaign.status === "draft" || campaign.status === "scheduled") ? (
+                        <DropdownMenuItem onClick={() => handleStatusChange(campaign, "active")}>
+                          <Play className="w-4 h-4 mr-2" />Activer
+                        </DropdownMenuItem>
+                      ) : campaign.status === "completed" ? (
+                        <DropdownMenuItem onClick={() => { setCampaignToLaunch(campaign); setIsResendDialogOpen(true); }}>
+                          <RotateCcw className="w-4 h-4 mr-2" />Relancer
+                        </DropdownMenuItem>
+                      ) : null}
+
                       <DropdownMenuSeparator />
                       <DropdownMenuItem className="text-red-600"
                         onClick={() => { setSelectedCampaign(campaign); setIsDeleteDialogOpen(true); }}>
@@ -522,22 +539,33 @@ export default function Campaigns() {
 
                 {/* Stats */}
                 {campaign.status !== "draft" && campaign.status !== "scheduled" && (
-                  <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-stone-50 rounded-lg">
-                    <div className="text-center">
-                      <MousePointer className="w-4 h-4 text-stone-400 mx-auto mb-1" />
-                      <div className="text-lg font-bold">{campaign.metrics?.ctr ? Math.round(campaign.metrics.ctr) + "%" : "0%"}</div>
-                      <div className="text-xs text-stone-500">CTR Global</div>
+                  <TooltipProvider>
+                    <div className="flex justify-center mb-4 p-4 bg-stone-50 rounded-lg">
+                      <div className="text-center group">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="cursor-help">
+                              <MousePointer className="w-4 h-4 text-stone-400 mx-auto mb-1 group-hover:text-blue-500 transition-colors" />
+                              <div className="text-lg font-bold">{campaign.metrics?.ctr ? Math.round(campaign.metrics.ctr) + "%" : "0%"}</div>
+                              <div className="text-xs text-stone-500 flex items-center justify-center gap-1">
+                                CTR Global <Info className="w-3 h-3 opacity-50" />
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs"><strong>Click-Through Rate</strong> : Pourcentage d'utilisateurs ayant cliqué sur le lien. Un taux élevé indique une simulation très convaincante.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <Target className="w-4 h-4 text-stone-400 mx-auto mb-1" />
-                      <div className="text-lg font-bold">{campaign.metrics?.precision ? Math.round(campaign.metrics.precision * 100) + "%" : "N/A"}</div>
-                      <div className="text-xs text-stone-500">Précision IA</div>
-                    </div>
-                    <div className="text-center">
-                      <Brain className="w-4 h-4 text-stone-400 mx-auto mb-1" />
-                      <div className="text-lg font-bold">{campaign.metrics?.auc_roc ? campaign.metrics.auc_roc.toFixed(2) : "N/A"}</div>
-                      <div className="text-xs text-stone-500">AUC-ROC</div>
-                    </div>
+                  </TooltipProvider>
+                )}
+
+                {/* Scheduled Info */}
+                {campaign.status === "scheduled" && campaign.started_at && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-2 text-blue-700 text-sm">
+                    <Calendar className="w-4 h-4" />
+                    Prévue pour le {new Date(campaign.started_at).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}
                   </div>
                 )}
 
@@ -564,6 +592,12 @@ export default function Campaigns() {
                     )}
                   </div>
                   <div className="flex gap-2">
+                    {campaign.status === "active" && (
+                      <Button variant="outline" size="sm" className="text-stone-700 border-stone-300 hover:bg-stone-50"
+                        onClick={() => { setCampaignToLaunch(campaign); setIsResendDialogOpen(true); }}>
+                        <RotateCcw className="w-4 h-4 mr-1" />Renvoyer
+                      </Button>
+                    )}
                     {campaign.status === "draft" && (
                       <Button variant="outline" size="sm" onClick={() => handleStatusChange(campaign, "active")}>
                         <Play className="w-4 h-4 mr-1" />Lancer
@@ -575,11 +609,11 @@ export default function Campaigns() {
                       </Button>
                     )}
                     {campaign.status === "completed" && (
-                      <Button variant="outline" size="sm" onClick={() => handleStatusChange(campaign, "active")}>
+                      <Button variant="outline" size="sm" onClick={() => { setCampaignToLaunch(campaign); setIsResendDialogOpen(true); }}>
                         <RotateCcw className="w-4 h-4 mr-1" />Relancer
                       </Button>
                     )}
-                    {(campaign.status === "completed" || campaign.status === "active" || campaign.status === "draft") && (
+                    {(campaign.status === "completed" || campaign.status === "active" || campaign.status === "draft" || campaign.status === "scheduled" || campaign.status === "paused") && (
                       <>
                         <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 font-medium"
                           onClick={() => openEdit(campaign)}>
@@ -632,8 +666,8 @@ export default function Campaigns() {
             <div>
               <DialogTitle className="text-base font-semibold">
                 {dialogMode === "create" ? "Créer une Campagne IA"
-                : dialogMode === "edit"  ? `Modifier : ${selectedCampaign?.name}`
-                : `Visualisation : ${selectedCampaign?.name}`}
+                  : dialogMode === "edit" ? `Modifier : ${selectedCampaign?.name}`
+                    : `Visualisation : ${selectedCampaign?.name}`}
               </DialogTitle>
               <DialogDescription className="text-xs mt-0.5">
                 {isReadOnly
@@ -652,15 +686,33 @@ export default function Campaigns() {
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               <div className="p-6 space-y-6">
 
-                {/* Campaign Name */}
-                <div>
-                  <label className="text-sm font-medium text-stone-700">Nom de la campagne</label>
-                  <Input
-                    className="mt-1" disabled={isReadOnly}
-                    placeholder="Ex: Campagne CEO Fraud – Mai 2025"
-                    value={formData.name ?? ""}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  />
+                {/* Campaign Name & Scheduling */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-stone-700">Nom de la campagne</label>
+                    <Input
+                      className="mt-1"
+                      placeholder="Ex: Campagne CEO Fraud – Mai 2025"
+                      value={formData.name ?? ""}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-stone-700">Date de planification (Optionnel)</label>
+                    <Input
+                      type="datetime-local"
+                      className="mt-1"
+                      value={formData.started_at ? new Date(formData.started_at).toISOString().slice(0, 16) : ""}
+                      onChange={e => {
+                        const date = e.target.value;
+                        setFormData({ 
+                          ...formData, 
+                          started_at: date,
+                          status: date ? "scheduled" : (formData.status === "scheduled" ? "draft" : formData.status)
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
@@ -765,7 +817,7 @@ export default function Campaigns() {
                 )}
 
                 {/* Sent Email Content Viewer (only when viewing a launched campaign) */}
-                {isReadOnly && selectedCampaign?.sent_phishing_emails && selectedCampaign.sent_phishing_emails.length > 0 && (
+                {selectedCampaign?.sent_phishing_emails && selectedCampaign.sent_phishing_emails.length > 0 && (
                   <div className="space-y-4 pt-4 border-t border-stone-100">
                     <div className="flex items-center gap-2 text-stone-900 font-semibold">
                       <Mail className="w-4 h-4 text-blue-600" />
@@ -800,7 +852,7 @@ export default function Campaigns() {
             {/* Footer */}
             <div className="px-6 py-4 border-t border-stone-200 bg-stone-50 flex gap-3 justify-end">
               <Button variant="outline" onClick={() => setShowDialog(false)}>Fermer</Button>
-              {!isReadOnly && (
+              {(selectedCampaign || !isReadOnly) && (
                 <Button
                   className="bg-blue-600 hover:bg-blue-700 px-8"
                   onClick={handleSubmit}
@@ -834,6 +886,30 @@ export default function Campaigns() {
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={handleDelete} disabled={deleteCampaign.isPending}>
               Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Resend Confirmation Dialog */}
+      <AlertDialog open={isResendDialogOpen} onOpenChange={setIsResendDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Renvoyer les emails ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'email va être envoyé uniquement aux personnes qui n'ont pas encore interagi avec l'email (clic ou signalement).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCampaignToLaunch(null)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+              if (campaignToLaunch) {
+                handleLaunch(campaignToLaunch);
+                setIsResendDialogOpen(false);
+                setCampaignToLaunch(null);
+              }
+            }}>
+              Confirmer l'envoi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

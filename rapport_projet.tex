@@ -410,6 +410,16 @@ useEffect(() => {
 Conformément à nos spécifications initiales concernant le caractère extrêmement premium de l'UI (qui s'oppose gravement aux solutions Legacy peu esthétiques existantes sur le marché), nous n'avons utilisé que TailwindCSS avec de curieuses palettes de couleurs HSL calibrées. 
 Chaque événement (création d'une campagne, envoi d'emails par paquets) déploie un système dynamique de \textit{Toasters} ou notifications. Lors du calcul de risque \textit{Humain}, des variables SVG avec gradient gèrent finement le passage d'une coloration de statut Sûr (Vert) à Risqué (Rouge) proportionnellement au comportement tracé en base de données de vos collaborateurs.
 
+\section{Optimisations Récentes et Automatisation Avancée}
+Suite aux retours et aux tests intensifs, plusieurs fonctionnalités critiques d'automatisation ont été intégrées pour rendre la plateforme véritablement autonome :
+
+\begin{itemize}
+    \item \textbf{Planification Intelligente (Scheduling)} : Un système d'ordonnancement basé sur les tâches de fond de Laravel a été mis en place. L'administrateur peut désormais définir une date et une heure précises pour l'envoi. Le serveur traite automatiquement ces campagnes planifiées chaque minute sans intervention humaine.
+    \item \textbf{Génération Anticipée des Previews} : Pour corriger le manque de visibilité en phase de conception, les emails de phishing sont maintenant générés dès la création de la campagne (mode brouillon). Cela permet au RSSI de prévisualiser et de valider le contenu généré par l'IA avant toute planification ou lancement.
+    \item \textbf{Clôture Automatique des Simulations} : Le système suit en temps réel le taux de réaction. Lorsqu'un taux de 100\% est atteint (tous les destinataires ont soit cliqué, soit signalé l'email), la campagne passe automatiquement au statut "Terminé", archivant ainsi les résultats et calculant le score final.
+    \item \textbf{Sécurité et Confirmation} : Ajout de dialogues de confirmation critiques, notamment lors du "Renvoyer", précisant explicitement que l'envoi ne cible que les personnes n'ayant pas encore interagi, évitant ainsi le harcèlement inutile des employés déjà vigilants.
+\end{itemize}
+
 % ==========================================
 % CHAPITRE 7
 % ==========================================
