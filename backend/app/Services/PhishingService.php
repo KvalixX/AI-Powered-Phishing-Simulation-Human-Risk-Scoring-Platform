@@ -28,6 +28,21 @@ class PhishingService
         $this->rlAgent = $rlAgent;
     }
 
+    /**
+     * Base URL reachable from email clients (see config app.training_tracking_base_url).
+     */
+    private function publicTrackingRoot(): string
+    {
+        return rtrim((string) config('app.training_tracking_base_url', config('app.url')), '/');
+    }
+
+    private function publicApiTrackingUrl(string $suffixPath): string
+    {
+        $suffixPath = ltrim($suffixPath, '/');
+
+        return $this->publicTrackingRoot() . '/api/v1/' . $suffixPath;
+    }
+
     private array $attackTemplates = [
         'credential_harvesting' => [
             'label' => 'Credential Harvesting',
@@ -338,8 +353,8 @@ Exemple de format attendu :
 
     private function injectTrackingUrl(string $html, string $token)
     {
-        $trackingUrl = url("/api/v1/track/click/{$token}");
-        $reportUrl = url("/api/v1/track/report/{$token}");
+        $trackingUrl = $this->publicApiTrackingUrl("track/click/{$token}");
+        $reportUrl = $this->publicApiTrackingUrl("track/report/{$token}");
 
         // Replace all # or placeholder links with the tracking URL
         $html = str_replace(['href="#"', "href='#'"], "href='{$trackingUrl}'", $html);
@@ -381,9 +396,11 @@ Exemple de format attendu :
                 'ai_content' => $aiContent,
             ]);
 
-            // 3. Inject validation link into content for email ONLY
-            $confirmUrl = url("/api/v1/track/training/{$training->id}");
-            $emailContent = $aiContent . "
+            // 3. Inject open pixel + validation link (URLs must use TRAINING_TRACKING_BASE_URL / APP_URL reachable from mail clients)
+            $openUrl = $this->publicApiTrackingUrl("track/training/{$training->id}/open");
+            $confirmUrl = $this->publicApiTrackingUrl("track/training/{$training->id}");
+            $openPixel = "<img src=\"{$openUrl}\" width=\"1\" height=\"1\" alt=\"\" style=\"display:block;width:1px;height:1px;border:0\" />";
+            $emailContent = $openPixel . $aiContent . "
                 <div style='margin-top: 30px; padding: 20px; border: 2px solid #2563eb; border-radius: 8px; background-color: #f0f7ff; text-align: center; font-family: sans-serif;'>
                     <h3 style='margin: 0 0 10px 0; color: #1e40af;'>Validation de formation</h3>
                     <p style='margin: 0 0 15px 0; color: #1e3a8a; font-size: 14px;'>Veuillez confirmer que vous avez bien lu et compris les consignes de sécurité ci-dessus.</p>

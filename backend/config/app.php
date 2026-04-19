@@ -56,6 +56,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public tracking base URL (training / phishing links in emails)
+    |--------------------------------------------------------------------------
+    |
+    | Must be reachable from the recipient's mail client (include http/https
+    | and port if needed), e.g. http://127.0.0.1:8000. Defaults to APP_URL.
+    |
+    */
+
+    'training_tracking_base_url' => env('TRAINING_TRACKING_BASE_URL', env('APP_URL', 'http://localhost')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

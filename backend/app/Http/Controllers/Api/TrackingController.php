@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Training;
 use App\Services\PhishingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class TrackingController extends Controller
 {
@@ -60,13 +62,37 @@ class TrackingController extends Controller
     }
 
     /**
+     * 1×1 tracking pixel: marks the training email as opened (images must be allowed in the client).
+     */
+    public function openTrainingEmail(Training $training): Response
+    {
+        if ($training->email_opened_at === null) {
+            $training->email_opened_at = now();
+            if ($training->status === 'assigned') {
+                $training->status = 'in_progress';
+            }
+            $training->save();
+        }
+
+        $pixel = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+
+        return response($pixel, 200, [
+            'Content-Type' => 'image/gif',
+            'Content-Length' => (string) strlen($pixel),
+            'Cache-Control' => 'no-store, private',
+        ]);
+    }
+
+    /**
      * Mark training as completed from email link.
      */
-    public function completeTraining(\App\Models\Training $training)
+    public function completeTraining(Training $training)
     {
+        $now = now();
         $training->update([
             'status' => 'completed',
-            'completed_at' => now(),
+            'completed_at' => $now,
+            'email_opened_at' => $training->email_opened_at ?? $now,
         ]);
 
         return response()->json([

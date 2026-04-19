@@ -45,6 +45,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTrainings, useCreateTraining, useDeleteTraining, useContacts, useRiskScores } from "@/hooks/useApi";
@@ -119,7 +125,10 @@ export default function Training() {
         status: t.status || 'not_started',
         priority: (t.status === 'completed') ? "low" : "high",
         content: content,
-        isAiGenerated: content && content.includes('<h')
+        isAiGenerated: content && content.includes('<h'),
+        email_opened_at: t.email_opened_at,
+        /** Pixel d’ouverture ou clic sur « J’ai compris » (API track/training). */
+        recipientHasOpenedMail: Boolean(t.email_opened_at) || t.status === 'completed',
       };
     }).sort((a,b) => (a.status === 'completed' ? 1 : -1)).slice(0, 10);
   }, [trainings, contacts]);
@@ -135,31 +144,39 @@ export default function Training() {
     return [
       { label: "Taux de complétion", value: completionRate, displayValue: `${completionRate}%`, target: 80, targetDisplay: "80%" },
       { label: "Délivrés (IA)", value: trainings.filter(t => t.ai_content || t.content).length, displayValue: trainings.filter(t => t.ai_content || t.content).length, target: totalTrainings, targetDisplay: totalTrainings },
-      { label: "En attente de lecture", value: trainings.filter(t => t.status !== 'completed').length, displayValue: trainings.filter(t => t.status !== 'completed').length, target: totalTrainings, targetDisplay: totalTrainings },
-      { label: "Utilisateurs Certifiés", value: certifiedUserIds.size, displayValue: certifiedUserIds.size, target: contacts.length || 0, targetDisplay: contacts.length || 0 },
+      { label: "En attente d’ouverture du mail", value: trainings.filter(t => t.status !== 'completed' && !t.email_opened_at).length, displayValue: trainings.filter(t => t.status !== 'completed' && !t.email_opened_at).length, target: totalTrainings, targetDisplay: totalTrainings },
     ];
   }, [trainings, contacts]);
 
-  const dynamicLeaderboard = useMemo(() => {
-    if (contacts.length === 0 || trainings.length === 0) return [];
-    
-    const userScores = contacts.map(c => {
-      const userTrainings = trainings.filter(t => t.contact_id === c.id);
-      const completedCount = userTrainings.filter(t => t.completed).length;
-      const rs = riskScores.find(r => r.contact_id === c.id)?.score || 50;
-      const score = Math.min(100, Math.max(0, 100 - rs + (completedCount * 10)));
-      return {
-        name: `${c.first_name} ${c.last_name}`,
-        department: c.department || "Général",
-        score,
-        completed: completedCount
-      };
-    });
-    
-    return userScores.sort((a,b) => b.score - a.score).slice(0, 5).map((u, i) => ({...u, rank: i+1}));
-  }, [contacts, trainings, riskScores]);
+
+
+  const trainingStatusBadge = (status: string, emailOpenedAt: string | null | undefined) => {
+    if (status === 'completed') {
+      return (
+        <Badge className="bg-green-100 text-green-700">
+          <CheckCircle2 className="w-3 h-3 mr-1" />
+          Mail consulté — terminé
+        </Badge>
+      );
+    }
+    if (emailOpenedAt || status === 'in_progress') {
+      return (
+        <Badge className="bg-blue-100 text-blue-800">
+          <Eye className="w-3 h-3 mr-1" />
+          Mail ouvert — à valider
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-stone-200 text-stone-700">
+        <Mail className="w-3 h-3 mr-1" />
+        Envoyé — non consulté
+      </Badge>
+    );
+  };
 
   return (
+    <TooltipProvider delayDuration={200}>
     <div className="h-full overflow-y-auto p-6 custom-scrollbar">
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -180,52 +197,11 @@ export default function Training() {
             <Download className="w-4 h-4 mr-2" />
             Excel
           </Button>
-          <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-            <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Assigner Formation
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-green-600" />
-                  Assigner une Formation
-                </DialogTitle>
-                <DialogDescription>
-                  Sélectionnez un module et assignez-le aux utilisateurs concernés
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 mt-4">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Brain className="w-4 h-4 text-green-600" />
-                    <span className="font-medium text-green-900">Recommandation IA</span>
-                  </div>
-                  <p className="text-sm text-green-700">
-                    Basé sur leur profil de risque, les utilisateurs les plus vulnérables seront ciblés.
-                  </p>
-                </div>
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
-                    Annuler
-                  </Button>
-                  <Button 
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={handleAutoAssign}
-                    disabled={createTraining.isPending}
-                  >
-                    Assigner automatiquement
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {dynamicLearningStats.map((stat, index) => (
           <Card key={index} className="border-stone-200">
             <CardContent className="p-6">
@@ -234,7 +210,6 @@ export default function Training() {
                 {index === 0 && <BookOpen className="w-4 h-4 text-blue-600" />}
                 {index === 1 && <Trophy className="w-4 h-4 text-yellow-600" />}
                 {index === 2 && <Clock className="w-4 h-4 text-stone-400" />}
-                {index === 3 && <CheckCircle2 className="w-4 h-4 text-green-600" />}
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-stone-900">{stat.displayValue}</span>
@@ -249,8 +224,8 @@ export default function Training() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="space-y-6">
+        <div className="space-y-6">
           <Card className="border-stone-200">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -297,22 +272,12 @@ export default function Training() {
                         </td>
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            {training.status === 'completed' ? (
-                              <Badge className="bg-green-100 text-green-700">
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                Terminé
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-blue-100 text-blue-700">
-                                <Clock className="w-3 h-3 mr-1" />
-                                Envoyé / En attente
-                              </Badge>
-                            )}
+                            {trainingStatusBadge(training.status, training.email_opened_at)}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex justify-end gap-2">
-                            {training.isAiGenerated && (
+                            {training.isAiGenerated && training.recipientHasOpenedMail && (
                               <Button 
                                 size="sm" 
                                 variant="ghost" 
@@ -321,6 +286,20 @@ export default function Training() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
+                            )}
+                            {training.isAiGenerated && !training.recipientHasOpenedMail && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex">
+                                    <Button size="sm" variant="ghost" className="text-stone-400" disabled aria-label="Contenu masqué jusqu'à consultation du mail">
+                                      <Lock className="w-4 h-4" />
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-xs">
+                                  Le contenu sera visible ici une fois le destinataire ouvert le mail de formation et cliqué sur le lien de confirmation.
+                                </TooltipContent>
+                              </Tooltip>
                             )}
                             <Button 
                               size="sm" 
@@ -339,64 +318,6 @@ export default function Training() {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card className="border-stone-200">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-600" />
-                Classement
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {dynamicLeaderboard.map((user, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 rounded-lg hover:bg-stone-50">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                      user.rank === 1 ? "bg-yellow-100 text-yellow-700" :
-                      user.rank === 2 ? "bg-stone-200 text-stone-700" :
-                      user.rank === 3 ? "bg-orange-100 text-orange-700" :
-                      "bg-stone-100 text-stone-600"
-                    }`}>
-                      {user.rank}
-                    </div>
-                    <Avatar className="w-8 h-8">
-                      <AvatarFallback className="bg-stone-200 text-stone-700 text-xs">
-                        {user.name.split(" ").map(n => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="font-medium text-stone-900 text-sm">{user.name}</p>
-                      <p className="text-xs text-stone-500">{user.department}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-stone-900">{user.score}%</p>
-                      <p className="text-xs text-stone-500">{user.completed} modules</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-stone-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Actions Rapides</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/reports')}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Générer rapport
-                </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/campaigns')}>
-                  <Play className="w-4 h-4 mr-2" />
-                  Démarrer simulation
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -447,5 +368,6 @@ export default function Training() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 }

@@ -1,489 +1,1180 @@
-\documentclass[12pt,a4paper]{report}
+\documentclass[12pt,a4paper,oneside]{report}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[french]{babel}
-\usepackage{graphicx}
+\usepackage{lmodern}
 \usepackage{geometry}
-\usepackage{hyperref}
-\usepackage{listings}
-\usepackage{xcolor}
-\usepackage{titlesec}
-\usepackage{fancyhdr}
-\usepackage{float}
-\usepackage{enumitem}
 \usepackage{setspace}
-\usepackage{tabularx}
-\usepackage{emptypage}
-\usepackage{lipsum} % Si besoin de texte de remplissage temporaire
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{listings}
+\usepackage{float}
 \usepackage{caption}
+\usepackage{pdflscape}
+\usepackage{titletoc}
 
-% Paramètres de mise en page (interligne 1.5 classique pour les mémoires/rapports)
-\geometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
-\onehalfspacing
+\geometry{margin=2.5cm}
+\setstretch{1.23}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlist[itemize]{itemsep=0.35em, topsep=0.45em}
+\setlist[enumerate]{itemsep=0.35em, topsep=0.45em}
 
-% Couleurs pour les blocs de code et l'UI
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-\definecolor{primarycolor}{RGB}{41, 128, 185}
-
-\lstdefinestyle{mystyle}{
-    backgroundcolor=\color{backcolour},   
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false,         
-    breaklines=true,                 
-    captionpos=b,                    
-    keepspaces=true,                 
-    numbers=left,                    
-    numbersep=5pt,                  
-    showspaces=false,                
-    showstringspaces=false,
-    showtabs=false,                  
-    tabsize=2
+\definecolor{PrimaryBlue}{HTML}{1F4E79}
+\definecolor{AccentBlue}{HTML}{2D6A9F}
+\definecolor{SoftGray}{HTML}{F4F7FA}
+\definecolor{BorderGray}{HTML}{D7DEE8}
+\definecolor{TextGray}{HTML}{2E3440}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=PrimaryBlue,
+  urlcolor=AccentBlue,
+  pdftitle={Rapport technique - Plateforme de simulation de phishing et scoring de risque humain},
+  pdfauthor={Equipe Projet}
 }
-\lstset{style=mystyle}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Rapport technique professionnel}
+\fancyhead[R]{\leftmark}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\titleformat{\chapter}[display]
+  {\bfseries\Huge\color{PrimaryBlue}}
+  {\filleft\fontsize{48}{52}\selectfont\color{PrimaryBlue!20}\thechapter}
+  {-3.5ex}
+  {\titlerule[1pt]\vspace{1ex}\filright}
+  [\vspace{0.8ex}\titlerule]
+\titleformat{\section}
+  {\bfseries\Large\color{PrimaryBlue}}
+  {\thesection}{0.7em}{}
+\titleformat{\subsection}
+  {\bfseries\large\color{AccentBlue}}
+  {\thesubsection}{0.7em}{}
+\titlespacing*{\chapter}{0pt}{-5pt}{18pt}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+\renewcommand{\cftchapfont}{\bfseries\color{PrimaryBlue}}
+\renewcommand{\cftsecfont}{\color{TextGray}}
+\renewcommand{\cftsubsecfont}{\color{TextGray}}
+\renewcommand{\cftchappagefont}{\bfseries\color{PrimaryBlue}}
+\renewcommand{\cftsecpagefont}{\color{TextGray}}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{SoftGray},
+  rulecolor=\color{BorderGray},
+  columns=fullflexible
+}
+
+\newcommand{\keypoint}[2]{
+\vspace{0.6em}
+\begin{center}
+\fcolorbox{BorderGray}{SoftGray}{
+\begin{minipage}{0.94\linewidth}
+\textbf{\color{PrimaryBlue}#1}\par\smallskip
+#2
+\end{minipage}}
+\end{center}
+\vspace{0.4em}
+}
+
+\newcommand{\captureplaceholder}{
+\begin{center}
+\fcolorbox{BorderGray}{SoftGray}{
+\begin{minipage}[c][6.2cm][c]{0.9\linewidth}
+\centering
+\textbf{\color{AccentBlue}[Inserer capture ici]}
+\end{minipage}}
+\end{center}
+}
 
 \begin{document}
 
-% ==========================================
-% PAGE DE GARDE
-% ==========================================
 \begin{titlepage}
-    \begin{center}
-        \includegraphics[width=0.3\textwidth]{example-image-a} % Remplacez par le logo de l'école
-        \vspace{1cm}
-        
-        \large \textbf{RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE} \\% Modifiez selon votre pays
-        \textbf{MINISTÈRE DE L'ENSEIGNEMENT SUPÉRIEUR ET DE LA RECHERCHE SCIENTIFIQUE} \\
-        % Nom de l'université
-        \vspace{1cm}
-        \Large \textbf{MÉMOIRE DE FIN D'ÉTUDES / RAPPORT DE PROJET}
-        
-        \vspace{1.5cm}
-        \hrule height 1.5pt
-        \vspace{0.5cm}
-        \Huge \textbf{Conception et Réalisation d'une Plateforme de Simulation de Phishing et d'Évaluation des Risques Humains propulsée par l'IA}
-        \vspace{0.5cm}
-        \hrule height 1.5pt
-        \vspace{1.5cm}
-        
-        \large \textbf{Présenté par :} \\
-        \vspace{0.5cm}
-        \Large Votre Nom / Votre Équipe
-        
-        \vspace{1cm}
-        \large \textbf{Encadré par :} \\
-        \vspace{0.5cm}
-        \Large Nom du Professeur
-        
-        \vfill
-        
-        \large \textbf{Année Académique 2025/2026}
-    \end{center}
+  \centering
+  {\Large\bfseries Rapport technique complet\par}
+  \vspace{1cm}
+  {\Huge\bfseries Plateforme de simulation de phishing\par}
+  {\Huge\bfseries et scoring de risque humain\par}
+  \vspace{1.2cm}
+  {\Large Backend + Client (Frontend)\par}
+  \vspace{1.5cm}
+  {\large Document de type rapport de stage / fin d'etudes\par}
+  \vfill
+  {\large Annee universitaire 2025-2026\par}
+  {\large Date: \today\par}
 \end{titlepage}
 
-% ==========================================
-% REMERCIEMENTS
-% ==========================================
-\chapter*{Remerciements}
-\addcontentsline{toc}{chapter}{Remerciements}
-Je tiens tout d'abord à remercier mon encadrant, [Nom du Professeur], pour ses conseils avisés, son suivi et la confiance qu'il m'a accordée tout au long de ce projet de fin d'études. Son expertise technique et ses orientations méthodologiques ont été une aide précieuse.
-
-Je remercie également le corps académique de [Nom de l'établissement] pour la qualité de l'enseignement prodigué durant mon cursus. 
-
-Enfin, j'exprime ma profonde gratitude envers ma famille et mes proches pour leur soutien moral inconditionnel tout au long de mes études.
-\newpage
-
-% ==========================================
-% RÉSUMÉ
-% ==========================================
-\chapter*{Résumé}
-\addcontentsline{toc}{chapter}{Résumé}
-Dans le contexte actuel de la cybersécurité, les menaces liées à l'ingénierie sociale, et particulièrement le phishing (hameçonnage), représentent le principal vecteur d'attaques informatiques affectant les entreprises. Ce projet vise à concevoir et développer une plateforme innovante permettant de tester, mesurer et améliorer la vigilance des employés face à ces menaces. 
-
-En intégrant l'Intelligence Artificielle (via l'API OpenAI), la plateforme génère des scénarios de phishing ultra-réalistes et personnalisés. Elle suit dynamiquement le comportement des utilisateurs, calcule un "Score de Risque Humain" et propose des recommandations éducatives. Ce rapport retrace l'ensemble du cycle de vie du projet, de l'état de l'art à l'implémentation d'une architecture moderne (React, Laravel, Node.js), tout en détaillant nos choix architecturaux et la méthodologie adoptée.
-
-\textbf{Mots-clés :} Cybersécurité, Phishing, Intelligence Artificielle, LLM, Laravel, React, Node.js, Évaluation des risques.
-
-\vspace{2cm}
-
-\chapter*{Abstract}
-\addcontentsline{toc}{chapter}{Abstract}
-In today's cybersecurity landscape, social engineering threats, particularly phishing, represent the primary vector of cyberattacks affecting organizations worldwide. This project aims to design and develop an innovative platform to test, measure, and enhance employee vigilance against these types of threats.
-
-By integrating Artificial Intelligence (via the OpenAI API), the platform generates ultra-realistic and hyper-personalized phishing scenarios. It dynamically tracks user interactions, calculates a "Human Risk Score," and offers targeted educational recommendations. This report details the entire project lifecycle, from the state-of-the-art research to the deployment of a modern architecture (React, Laravel, Node.js), while highlighting our architectural choices and the applied methodology.
-
-\textbf{Keywords:} Cybersecurity, Phishing, Artificial Intelligence, LLM, Laravel, React, Node.js, Risk Scoring.
-\newpage
-
-% ==========================================
-% TABLES (TOC, Figures, Tableaux)
-% ==========================================
 \tableofcontents
-\newpage
-\listoffigures
-\addcontentsline{toc}{chapter}{Table des Figures}
-\newpage
 \listoftables
-\addcontentsline{toc}{chapter}{Liste des Tableaux}
-\newpage
+\clearpage
 
-% ==========================================
-% INTRODUCTION GÉNÉRALE
-% ==========================================
-\chapter*{Introduction Générale}
-\addcontentsline{toc}{chapter}{Introduction Générale}
+\chapter*{Resume}
+\addcontentsline{toc}{chapter}{Resume}
+Ce rapport presente l'etude technique complete d'un projet informatique de cybersécurité appliquee: une plateforme de simulation de phishing assistee par intelligence artificielle, couplee a un moteur de scoring du risque humain. Le systeme est compose d'un backend expose sous forme d'API REST et d'un client frontend permettant la gestion des campagnes, l'observation comportementale, l'analyse du risque et la remédiation par formation.
 
-Le développement fulgurant d'Internet et l'interconnexion globale des systèmes d'information ont radicalement transformé le fonctionnement des entreprises modernes. Cette numérisation accrue a malheureusement ouvert la porte à de nouvelles formes de criminalité numérique. Parmi toutes les menaces recensées, l'ingénierie sociale reste la plus exploitée, le maillon faible de la chaîne de sécurité étant très souvent l'être humain.
+La solution couvre l'ensemble du cycle metier: conception et lancement de campagnes, generation de contenus de phishing simules, tracking des interactions (clic, signalement, completion de formation), calcul de scores de risque individuels et consolides, puis pilotage via tableaux de bord. Le present document decrit le contexte, l'architecture, la conception, les choix techniques, l'implementation, la strategie de test, le deploiement et les perspectives d'evolution.
 
-Malgré les investissements massifs dans les infrastructures de sécurité (pare-feux, IDS/IPS, antivirus de dernière génération), le phishing (hameçonnage) demeure le vecteur initial majeur de la vaste majorité des incidents de cybersécurité (ransomwares, fuites de données, vols d'identité). Un simple clic sur un lien corrompu par un collaborateur inattentif peut compromettre l'intégralité d'un système d'information.
+\chapter{Introduction generale du projet}
 
-Pour pallier ce problème, les organisations déploient des campagnes de sensibilisation. Toutefois, ces campagnes sont souvent génériques, répétitives et peu adaptées aux spécificités de chaque département ou employé. Pire, avec l'émergence récente des grands modèles de langage (LLM - Large Language Models) comme ChatGPT, les attaquants génèrent aujourd'hui des emails de phishing impossibles à différencier d'un email légitime, déjouant les barrières linguistiques et les fautes d'orthographe classiques qui trahissaient jadis l'attaquant.
+\section{Contexte du projet}
+Les organisations font face a une hausse continue des incidents de cybersécurité lies a l'ingenierie sociale. Les attaques de phishing, en particulier, exploitent la dimension humaine plus que les failles techniques pures. La generalisation du teletravail, des outils cloud et des flux email transverses augmente la probabilite d'exposition.
 
-\textbf{Problématique :}
-Face à l'évolution des attaques de phishing propulsées par l'Intelligence Artificielle de la part des cybercriminels, comment les équipes de sécurité informatique peuvent-elles automatiser la création de simulations tout aussi sophistiquées pour évaluer la posture de risque humain au sein d'une organisation d'une manière continue, granulaire et ciblée ?
-
-\textbf{Objectif du Projet :}
-Ce projet de fin d'études ambitionne de créer de bout en bout une \textbf{Plateforme Multi-tenant de Simulation de Phishing et d'Évaluation des Risques Humains propulsée par l'IA}. 
-
-Les objectifs spécifiques sont les suivants :
-\begin{itemize}
-    \item Automatiser la création d'emails de phishing en utilisant l'IA pour générer des contenus variés, avec gestion paramétrable de la difficulté et du contexte sémantique (Ressources Humaines, Technique, Urgence, etc.).
-    \item Fournir une interface de création de campagne puissante permettant un ciblage précis par département ou utilisateur individuel.
-    \item Intercepter automatiquement les interactions des cibles avec les campagnes (Ouverture, Clics) en développant un serveur d'emails transparent.
-    \item Calculer dynamiquement le risque que représente chaque utilisateur pour l'entreprise (Human Risk Scoring) et mettre en évidence les départements vulnérables.
+Dans ce contexte, les programmes de sensibilisation traditionnels montrent leurs limites:
+\begin{itemize}[leftmargin=1.2cm]
+  \item contenus de formation standardises, peu personnalises;
+  \item faible mesure objective des comportements reels;
+  \item difficulte a relier les actions de sensibilisation a une reduction mesurable du risque.
 \end{itemize}
 
-\textbf{Organisation du Document :}
-Ce rapport s'articule autour des chapitres suivants :
-Le Chapitre 1 établit l'état de l'art du domaine de la cybersécurité orientée sur le risque humain et du phishing.
-Le Chapitre 2 sera consacré à l'étude préalable, la capture des besoins fonctionnels et non fonctionnels, et le choix des technologies (React, Laravel, OpenAI).
-Le Chapitre 3 présente l'analyse et la conception architecturale, avec les diagrammes UML (Cas d'utilisation, Séquences, Classes).
-Le Chapitre 4 couvre l'implémentation backend, décrivant la logique des API REST et de la base de données.
-Le Chapitre 5 détaille le développement du client frontend et l'ingénierie appliquée pour rendre le système robuste.
-Le Chapitre 6 présentera les tests, les optimisations de l'application (telles que le système de repli IA et les corrections de bugs en temps réel) et l'état d'avancement des développements qui ont mené au projet actuel.
-Finalement, une conclusion viendra synthétiser nos travaux et dépeindre nos futures pistes quant à l'amélioration de la plateforme.
+Le projet vise donc a fournir une plateforme operationnelle qui transforme la sensibilisation en un processus continu, mesurable et améliorable.
 
-% ==========================================
-% CHAPITRE 1
-% ==========================================
-\chapter{Contexte et État de l'Art}
-
-\section{Introduction}
-L'objectif de ce chapitre est de plonger dans les concepts théoriques sous-jacents de la problématique que nous abordons. Nous définirons précisément ce qu'est le phishing, son évolution, et nous analyserons les solutions existantes sur le marché pour comprendre leurs limites actuelles justifiant notre démarche et le besoin de notre projet.
-
-\section{La menace de l'ingénierie sociale}
-L'ingénierie sociale est l’art de manipuler des personnes afin de contourner les dispositifs de sécurité. Elle repose sur des biais cognitifs (confiance, autorité, peur, curiosité). Contrairement au piratage purement technique (fuzzing, buffer overflow, etc.), il est bien plus simple d'exploiter la naïveté ou l'empressement d'un humain que de chercher une faille de type zero-day dans un pare-feu Cisco.
-
-\subsection{Typologie des attaques de Phishing}
-\begin{itemize}
-    \item \textbf{Phishing en masse (Bulk Phishing)} : Envoi de millions d'emails non ciblés. Taux de réussite très faible.
-    \item \textbf{Phishing ciblé (Spear Phishing)} : Cible une organisation ou une personne précise. Le contenu est personnalisé d'après des informations recueillies (OSINT) sur les réseaux sociaux.
-    \item \textbf{Whaling (Pêche à la baleine)} : Cible spécifiquement les cadres supérieurs et les dirigeants (CEO, CFO) car ils disposent d'autorisations élevées au sein du système.
-    \item \textbf{Business Email Compromise (BEC)} : L'attaquant usurpe l'identité d'un dirigeant pour ordonner un transfert d'argent urgent.
-\end{itemize}
-
-\subsection{Les statistiques du Phishing}
-Selon le rapport Verizon Data Breach Investigations Report (DBIR) 2024, le facteur humain est impliqué dans près de 74\% de toutes les violations de données recensées globalement, qu'il s'agisse d'erreurs, d'utilisation de privilèges ou d'attaques d'ingénierie sociale réussies. Les pertes se chiffrent en milliards de dollars par an à l'échelle de l'industrie globale.
-
-\section{L'Impact de l'IA Générative dans la Cybersécurité}
-
-\subsection{L'IA comme arme (Côté Attaquant)}
-Avant 2022, un indicateur clé pour identifier un email de phishing était souvent la présence de fautes de grammaire, de syntaxe approximative et de traductions erronées puisqu'ils étaient produits par des hackeurs russophones, sinophones ou provenant d'autres pays n'ayant pas le français ou l'anglais comme langue maternelle.
-Avec les modèles d'IA comme ChatGPT, \textit{WormGPT} ou \textit{FraudGPT}, tout cybercriminel peut générer en quelques secondes un texte extrêmement convaincant, poli, structuré de façon professionnelle, et en appliquant par exemple de faux contextes : "Rappelle aux employés de mettre à jour la politique RH avec un ton urgent de la part du CEO".
-
-\subsection{L'IA comme bouclier (Côté Défenseur)}
-Pour contrer cette professionnalisation de l'attaque via IA, les équipes de sécurité défensives doivent, elles aussi, se doter de l'IA pour simuler ces nouvelles attaques sophistiquées sans attendre qu'une brèche ne se produise. L'utilisation d'IA générative dans les simulations confère un avantage unique : l'imprévisibilité et la diversité. Les employés ne s'habituent plus aux mêmes vieux modèles d'emails d'exercices qu'ils repèrent de loin.
-
-\section{Analyse des Solutions Existantes (État de l'art)}
-Plusieurs entreprises proposent des solutions de Security Awareness Training. 
-\begin{itemize}
-    \item \textbf{KnowBe4} : Le leader historique. Propose une large bibliothèque de modèles. Cependant, les emails restent des \textit{templates} statiques. Une personnalisation manuelle prend beaucoup de temps pour l'administrateur.
-    \item \textbf{Cofense (PhishMe)} : Orienté sur la réponse au phishing et l'apprentissage direct dans l'interface, très adapté aux géants de l'industrie, mais souvent lourd et coûteux.
-    \item \textbf{GoPhish} : La solution Open Source la plus populaire. Elle est excellente pour envoyer des emails mais ne contient ni IA ni génération dynamique de contenu, ni tableau de bord granulaire de Scoring de Risques Humains complexes. Elle exige une connaissance technique pour la configurer.
-\end{itemize}
-
-\textbf{Limites observées conjointes} : La plupart de ces solutions n'ont pas encore intégré de manière fine l'IA générative en temps réel qui modifie chaque email au sein d'une seule et même campagne pour faire en sorte que chaque employé d'un même département reçoive un email légèrement différent sémantiquement, empêchant le bouche-à-oreille (effet de "machine à café") d'alerter tout le monde lors d'une simulation. L'évaluation est souvent simpliste (Taux de clics globaux vs Score de risque multi-facteurs).
-
-\section{Justification du Projet}
-Face aux limitations de personnalisation en profondeur, notre solution a pour originalité de confier l'entière rédaction de la campagne de simulation à un moteur LLM (par un prompt engineering avancé) en permettant un ciblage précis par département avec évaluation automatique. La solution doit être légère, "Cloud-Ready", et présenter un User Interface (UI) d'excellence digne des applications modernes.
-
-% ==========================================
-% CHAPITRE 2
-% ==========================================
-\chapter{Méthodologie et Spécifications des Besoins}
-
-\section{Introduction}
-Avant d'entamer la modélisation à proprement dite, il s'avère indispensable de bien définir les contours du projet. Ce chapitre permet de capter les besoins des futurs utilisateurs finaux, traduits sous forme d'exigences fonctionnelles et non fonctionnelles de notre plateforme.
-
-\section{Méthodologie Adoptée}
-Nous avons adopté la méthode \textbf{Agile Scrum} pour la gestion de ce projet. Cette approche itérative et incrémentielle nous a permis de procéder à des développements par cycles (Sprints) et de vérifier constamment l'adaptation du logiciel avec les objectifs.
-\begin{itemize}
-    \item \textbf{Sprint 1} : Mise en place de la pile technologique, configuration du Backend Laravel et du Frontend Vite/React. Définition des entités.
-    \item \textbf{Sprint 2} : Développement du système d'authentification et de la gestion Multi-tenant (Départements et Contacts).
-    \item \textbf{Sprint 3} : Intégration de l'Intelligence Artificielle (API OpenAI) et de l'ingénierie du Prompt pour générer les modèles d'emails.
-    \item \textbf{Sprint 4} : Mise en place du tracker d'exécution (Ouvertures, Clics sur de faux liens).
-    \item \textbf{Sprint 5} : Développement des algorithmes du Dashboard analytique et du Risk Scoring. Correction de bugs.
-\end{itemize}
-
-\section{Identification des Acteurs}
-Un acteur représente l'abstraction d'un rôle joué par des entités externes qui interagissent directement avec le système.
-\begin{itemize}
-    \item \textbf{Administrateur RSSI (Responsable Sécurité des Systèmes d'Information)} : Il utilise la plateforme pour créer les campagnes de phishing, gérer les utilisateurs/départements, lire les rapports, lier les API.
-    \item \textbf{Employé (Cible / Contact)} : Il utilise sa propre boîte mail (Gmail, Outlook). Ses actions (Cliquer, Lire, Signaler) sont remontées indirectement vers le système sans qu'il ait conscience que la plateforme existe (sauf si on l'en informe post-simulation).
-    \item \textbf{Système d'IA (OpenAI API)} : Acteur externe servant à générer le contenu à la demande.
-\end{itemize}
-
-\section{Spécification des Besoins Fonctionnels}
-Le système devra répondre aux exigences suivantes :
-\begin{enumerate}
-    \item \textbf{Gestion des Cibles et de l'Organisation} : Créer des départements internes à l'entreprise et importer la liste des contacts (Nom, Email, Rôle) pour chaque département.
-    \item \textbf{Configuration dynamique des Campagnes} : L'administrateur peut configurer une attaque d'ingénierie sociale (Type d'attaque : Urgence vitale, RH, Demande d'infos, Récupération de mot de passe ; Niveau de difficulté : Facile, Moyen, Difficile). Il peut choisir le nom de l'expéditeur déguisé.
-    \item \textbf{Génération de contenu IA Réaliste} : Le système doit interpréter la conception de l'administrateur pour fabriquer des sujets d'email et des corps HTML avec liens de tracking factices complètement invisibles.
-    \item \textbf{Expédition des emails} : Le système doit pouvoir expédier les messages selon un service SMTP ou des adresses de test \textit{Ethereal} de manière sécurisée en évitant de se faire bloquer par les anti-spams normaux via ajustement asynchrone des threads d'envoi.
-    \item \textbf{Tracking (Pistage comportemental)} : L'application doit tracer l'heure exacte à laquelle un contact ouvre un email (via pixel de suivi), et s'il a cliqué sur un lien factice, compromettant théoriquement l'entreprise.
-    \item \textbf{Système de Scoring (Human Risk Scoring)} : Créer un dashboard qui agrége toutes les données pour formuler un niveau de risque global de 1 à 100 pour l'entreprise, avec détails au niveau individuel.
-    \item \textbf{Lectures par Dashboard} : Offrir un tableau de bord réactif et riche graphiquement avec filtres par date.
+\section{Problematique}
+Comment concevoir un systeme qui:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item simule des campagnes de phishing realistes mais controlees;
+  \item mesure finement les comportements des utilisateurs;
+  \item calcule un niveau de risque humain interpretable;
+  \item propose des actions correctives personnalisees;
+  \item reste ergonomique pour les equipes metier et securite?
 \end{enumerate}
 
-\section{Spécification des Besoins Non Fonctionnels}
-Les aspects qualitatifs garantissant le succès de la plateforme :
-\begin{itemize}
-    \item \textbf{UX/UI (Ergonomie spectaculaire)} : L'interface client développée en React se doit d'être moderne (composants Shadcn, animations subtiles, mode sombre intégré) apportant une sensation premium immédiate à l'administrateur.
-    \item \textbf{Performance et Réactivité} : La génération d'email via IA peut être longue. L'interface ne doit pas geler. Des mécanismes asynchrones et des loaders de "Pré-visualisation" doivent gérer cette charge.
-    \item \textbf{Haute disponibilité et Mode Dégradé} : Si les quotas de l'API OpenAI sont atteints, la plateforme ne doit pas crasher. Elle doit passer en "Simulation Premium fallback mode", alerter le RSSI visuellement, mais poursuivre le fonctionnement basique à l'aide de templates pré-stockés hors ligne.
-    \item \textbf{Sécurisation des données} : Compte tenu de la criticité des listes d'emails des organisations et de leurs vulnérabilités, l'accès sécurisé API via Laravel Sanctum/JWT doit être absolu. Protection anti-CSRF intégrée.
+La difficulte principale reside dans l'equilibre entre realisme technique, securite d'usage, explicabilite des scores, et simplicite d'exploitation.
+
+\section{Objectifs}
+\subsection{Objectif principal}
+Developper une plateforme full-stack backend/frontend permettant de simuler des attaques de phishing de maniere encadree et d'evaluer dynamiquement le risque humain.
+
+\subsection{Objectifs specifiques}
+\begin{itemize}[leftmargin=1.2cm]
+  \item Mettre en place une API robuste pour la gestion des campagnes et du tracking.
+  \item Integrer une generation de contenu email assistee par IA.
+  \item Concevoir une interface web de pilotage claire et productive.
+  \item Produire des indicateurs analytiques decisionnels.
+  \item Intégrer un mecanisme de remédiation post-incident (formation ciblee).
 \end{itemize}
 
-% ==========================================
-% CHAPITRE 3
-% ==========================================
-\chapter{Choix Technologiques et Environnement de Développement}
-
-\section{Architecture Globale : Le Modèle Client-Serveur}
-Pour répondre aux contraintes de maintenance, d'indépendance des équipes, et d'une fluidité de navigation totale (Single Page Application), nous avons opté pour une architecture séparée composées d'APIs. 
-Le frontend et le backend sont complètement découplés. Le dialogue s'effectue via des requêtes HTTP asynchrones en formalisme JSON.
-
-\section{Le Backend (API) : Laravel (PHP 8.x)}
-Laravel a été choisi comme pilier principal de la logique métier.
-\begin{itemize}
-    \item \textbf{Pourquoi Laravel ?} C'est le standard de développement backend PHP le plus abouti. Il offre \textit{Eloquent ORM} permettant de modeler la base de données via la Programmation Orientée Objet sans manipuler de requêtes SQL brutes. Il possède nativement des mécanismes de validation de requêtes très stricts.
-    \item \textbf{Moteur API} : Création rapide de routes RESTful. Les migrations permettent une versioning des schémas de BDD essentiels pour les tests locaux de la solution.
+\section{Demarche du rapport}
+Ce document suit une progression academique:
+\begin{itemize}[leftmargin=1.2cm]
+  \item de la comprehension du besoin vers la conception;
+  \item de la conception vers l'implementation;
+  \item de l'implementation vers la validation et le deploiement;
+  \item de l'etat actuel vers les perspectives d'industrialisation.
 \end{itemize}
 
-\section{Le Frontend (Client) : React.js \& TypeScript}
-\begin{itemize}
-    \item \textbf{React.js} : Bibliothèque JavaScript créée par Meta. Son principe axé sur les composants réutilisables permet de bâtir des UI d'une grande complexité (Dashboards, graphes complexes, formulaires à étapes de création de campagnes).
-    \item \textbf{TypeScript} : Ajoute un typage fort à JavaScript. Ce choix été décisif pour un projet gérant de nombreuses structures JSON (Campagnes, Matrices de Risques, Utilisateurs) afin de réduire de 80\% les bugs en phase de compilation plutôt qu'au moment de l'exécution dans le navigateur utilisateur.
-    \item \textbf{Vite} : Utilisé comme bundler, en remplacement de Create-React-App pour ses performances de compilation drastiquement accélérées.
-    \item \textbf{TailwindCSS et UI} : Outil de l'esthétique. Ce framework CSS basé sur la théorie de "l'utilitaire" permet de créer des interfaces époustouflantes (couleurs premium, \textit{glassmorphism}, effets de gradients lisses). Utilisé couplé à \textit{Shadcn UI} qui offre des composants de grande fiabilité (Modals, Select, Dialogs) accessibles.
+\chapter{Presentation globale et architecture du systeme}
+
+\section{Description generale}
+Le systeme etudie est une application client-serveur avec:
+\begin{itemize}[leftmargin=1.2cm]
+  \item un \textbf{backend} centralisant la logique metier, l'authentification, les operations sur les campagnes et l'analytique;
+  \item un \textbf{frontend} offrant une interface de gestion des campagnes, d'analyse de risque et de reporting;
+  \item une integration \textbf{IA} pour la generation de contenus de phishing et d'articles de formation.
 \end{itemize}
 
-\section{Le Moteur d'envoi et Micro-service : Node.js}
-Un sous-système dans \texttt{/server} a été mis en œuvre. Le package \texttt{Nodemailer} gère la communication SMTP. Pour la phase de développement, ce module permet l'interfaçage avec le bac à sable (sandbox) \textit{Ethereal Email} offrant des URLs de prévisualisation à la volée. Nous avons prévu que ce module gère les Webhooks et l'empreinte DNS à l'avenir.
-
-\section{L'Intelligence Artificielle : OpenAI GPT}
-Nous avons exploité le modèle LLM d'OpenAI car ce sont eux qui respectent le plus précisément l'ingénierie de prompt basée sur des structures strictes (tel que demander à renvoyer exclusivement du JSON prêt à être parsé par le serveur Laravel au lieu d'un texte littéraire). 
-
-% ==========================================
-% CHAPITRE 4
-% ==========================================
-\chapter{Analyse et Conception UML}
-
-\section{Introduction}
-L'objectif de cette phase vitale de modélisation est de traduire logiquement le système avant la moindre ligne de code. Nous utilisons UML (Unified Modeling Language).
-
-\section{Diagramme des Cas d'Utilisation}
-Ce diagramme recense toutes les actions majeures initiées par le RSSI (Administrateur).
-\subsection{Identification des Use Cases}
-\begin{itemize}
-    \item \textbf{Gérer les Cibles} : Créer/Modifier/Supprimer un employé ou un département entier.
-    \item \textbf{Lancer une Simulation} : La fonction principale. Sous-actions incluses : Définir la cible, Choisir ou générer par IA le type de simulation, Définir son paramètre (URL ciblée).
-    \item \textbf{Générer l'IA} : Exécuter la fonction de création intelligente. Si le quota de l'API est plein, passer par le \textit{fallback}.
-    \item \textbf{Visualiser le Dashboard} : Analyser les scores analytiques et l'impact de la campagne sur les utilisateurs qui ont "cliqué".
-\end{itemize}
-
-\section{Conception de la Base de Données (Diagramme de Classes)}
-Le modèle relationnel (reflet d'Eloquent sur Laravel) est le fondement dynamique de notre solution :
-
-\begin{figure}[H]
-    \centering
-    [PLACEHOLDER Diagramme de Classes / UML Entité-Relation MLD]
-    \caption{Structure Conceptuelle des Données}
-\end{figure}
-
-Les modèles clés documentés dans l'ORM (\texttt{backend/app/Models}) sont :
-\begin{enumerate}
-    \item \textbf{\texttt{Campaign}} : Possède des attributs complexes comme \texttt{difficulty\_level}, \texttt{attack\_type}, \texttt{status}, les champs Json permettant la gestion asynchrone (\texttt{target\_departments}, \texttt{target\_contacts}).
-    \item \textbf{\texttt{User}} et \textbf{\texttt{Contact}} : Relatifs aux identités.
-    \item \textbf{\texttt{EmailTemplate}} : Gabarits contenant les balises injectables (\{\{name\}\}, \{\{department\}\}).
-    \item \textbf{\texttt{BehavioralEvent}} \& \textbf{\texttt{EmailClick}} : Classes essentielles traquant dans la table SQL l'instant exact, l'IP factice (ou vraie), l'UserAgent du navigateur lorsque la cible a compromis sa position en répondant au phishing.
-    \item \textbf{\texttt{UserRiskScore}} : Matérialise numériquement la vulnérabilité d'un utilisateur, en utilisant un algorithme basé sur l'historique de ses clics/ouvertures.
+Le systeme permet notamment:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item de definir les cibles (contacts, departements);
+  \item de configurer des campagnes (difficulte, type d'attaque);
+  \item de generer et envoyer des emails de simulation;
+  \item de suivre les interactions des utilisateurs;
+  \item de calculer des scores et KPIs;
+  \item de declencher des remediations pedagogiques.
 \end{enumerate}
 
-% ==========================================
-% CHAPITRE 5
-% ==========================================
-\chapter{Implémentation et Sécurisation du Backend}
+\section{Architecture globale client-serveur}
+\subsection{Composant client (frontend)}
+Le frontend est une SPA (Single Page Application). Il gere:
+\begin{itemize}[leftmargin=1.2cm]
+  \item l'authentification et la session utilisateur;
+  \item la navigation multi-pages metier;
+  \item l'affichage des donnees analytiques;
+  \item la communication HTTP avec le backend.
+\end{itemize}
 
-\section{Conception des API et Contrôleurs PHP}
-L'architecture au sein de Laravel suit la convention MVC par l'intermédiaire des API de ressources. Tout est stocké statiquement dans le répertoire \texttt{backend/app/Http/Controllers/Api}.
+\subsection{Composant serveur (backend)}
+Le backend expose des endpoints REST versionnes, protege les operations sensibles, persiste les donnees en base et encapsule les regles metier (lancement de campagne, mise a jour de score, etc.).
 
-\subsection{Le Système de Tracking : \texttt{TrackingController}}
-Pour qu'un utilisateur cible soit identifié sans se connecter, chaque URL générée par une campagne inclut un token de ciblage encrypté, spécifique à la session d'email.
-Lorsqu'un clic est opéré, l'URL redirige silencieusement vers l'API. Le \texttt{TrackingController} identifie la variable cachée dans le hash, enregistre dans la base de données un nouvel objet \texttt{EmailClick} corrélé avec le \texttt{Campaign\_id} et le \texttt{Contact\_id}, avant de rediriger l'utilisateur malchanceux vers une fausse page "Demande Expirée" ou (dans un contexte éducatif autorisé) sur une page didactique lui notifiant qu'il vient de subir une simulation.
+\subsection{Description textuelle du schema d'architecture}
+Le diagramme d'architecture globale (non dessine ici) peut etre decrit comme suit:
+\begin{itemize}[leftmargin=1.2cm]
+  \item un bloc \textit{Client Web} communique en HTTPS vers \textit{API Backend};
+  \item le backend lit/ecrit dans la \textit{Base de donnees};
+  \item le backend appelle un service externe \textit{IA Generative} pour produire des contenus;
+  \item un service mail est utilise pour l'envoi des emails de simulation/formation;
+  \item des routes de tracking publiques enregistrent les interactions des destinataires.
+\end{itemize}
 
-\subsection{Intégration et Ingénierie de l'IA : \texttt{AIController}}
-Le développement le plus profond et le plus sensible se situe dans le contrôleur de l'Intelligence Artificielle. Le problème que l'on rencontrait initialement était que, indépendamment de la difficulté sélectionnée (ex: "Débutant" vers "Expert"), le modèle réagissait d'une façon très similaire, produisant des e-mails convenables mais manquants de subtilité psychologique.
+\section{Choix technologiques}
+\subsection{Backend}
+\begin{itemize}[leftmargin=1.2cm]
+  \item Framework: Laravel (PHP)
+  \item Authentification: Laravel Sanctum
+  \item ORM: Eloquent
+  \item API REST versionnee
+\end{itemize}
 
-\textbf{L'optimisation du "Prompt Engineering"} intégrée directement dans le contrôleur :
-Nous avons conçu un contexte formateur extrêmement détaillé stipulant la posture que l'IA doit adopter. En lui injectant des balises paramétriques issues des choix de l'utilisateur ReactUI tel que le paramètre sémantique (Ressources Humaines, Technique IT), nous forçons OpenAI à utiliser des manipulations via biais cognitif, tels que créer un sens d'urgence exagéré ou inclure de faux numéros de dossiers pertinents à l'industrie cible. Cette avancée drastique garantit des scénarios redoutables d'efficacité ("Red Teaming Ready").
+\subsection{Frontend}
+\begin{itemize}[leftmargin=1.2cm]
+  \item Framework: React + TypeScript
+  \item Routing: React Router
+  \item Data fetching/cache: React Query
+  \item Client HTTP: Axios
+  \item UI: composants modernes type shadcn + Tailwind
+\end{itemize}
 
-\begin{lstlisting}[language=PHP, caption=Exemple d'approche conceptuelle dans AIController]
-public function generatePhishingAttempt(Request $request) {
-    try {
-        $prompt = "Tu es un ingenieur social offensif expert en Red Teaming. 
-        Genere un email de type '{$request->attack_type}' 
-        avec une difficulte de niveau '{$request->difficulty_level}'. 
-        Le format de sortie DOIT etre un pur contexte JSON avec variables {target} ...";
+\subsection{Justification des choix}
+Ces technologies ont ete choisies pour:
+\begin{itemize}[leftmargin=1.2cm]
+  \item la productivite de developpement;
+  \item la maturite de l'ecosysteme;
+  \item la maintenabilite du code;
+  \item la capacite a construire une application metier evolutive.
+\end{itemize}
 
-        // Appel client OpenAI (SDK PHP)
-        $response = OpenAI::client(env('OPENAI_API_KEY'))->chat()->create([
-             'model' => 'gpt-4o-mini',
-             'messages' => [['role' => 'system', 'content' => $prompt]],
-        ]);
-        
-        return response()->json(json_decode($response->choices[0]->message->content));
-    } catch (\Exception $e) {
-        // Redirection vers le mecanisme de Mode Degrade / Fallback "Premium Simulation"
-    }
+\chapter{Etude et specification des besoins}
+
+\section{Besoins fonctionnels}
+\subsection{Gestion des utilisateurs et authentification}
+\begin{itemize}[leftmargin=1.2cm]
+  \item inscription et connexion;
+  \item recuperation du profil utilisateur connecte;
+  \item mise a jour du profil;
+  \item deconnexion securisee.
+\end{itemize}
+
+\subsection{Gestion des contacts cibles}
+\begin{itemize}[leftmargin=1.2cm]
+  \item creation/modification/suppression de contacts;
+  \item import en masse;
+  \item classification par departement, poste, seniorite;
+  \item consultation des donnees de risque et d'interactions.
+\end{itemize}
+
+\subsection{Gestion des campagnes de phishing}
+\begin{itemize}[leftmargin=1.2cm]
+  \item creation de campagne (nom, difficulte, type d'attaque, ciblage);
+  \item generation de contenus;
+  \item lancement, pause, reprise, relance;
+  \item suivi de statut (draft, scheduled, active, paused, completed).
+\end{itemize}
+
+\subsection{Tracking comportemental}
+\begin{itemize}[leftmargin=1.2cm]
+  \item enregistrement des clics;
+  \item enregistrement des signalements;
+  \item suivi de completion de formation;
+  \item historisation des evenements par contact/campagne.
+\end{itemize}
+
+\subsection{Scoring et analytics}
+\begin{itemize}[leftmargin=1.2cm]
+  \item score de risque par utilisateur;
+  \item distribution des risques par niveau;
+  \item tendances temporelles;
+  \item metriques globales et departementales.
+\end{itemize}
+
+\subsection{Formation post-incident}
+\begin{itemize}[leftmargin=1.2cm]
+  \item attribution automatique d'un module apres clic;
+  \item envoi d'un contenu pedagogique contextualise;
+  \item suivi de progression et completion.
+\end{itemize}
+
+\section{Besoins non fonctionnels}
+\subsection{Securite}
+\begin{itemize}[leftmargin=1.2cm]
+  \item authentification token-based;
+  \item validation stricte des entrees API;
+  \item separation routes publiques/protegees;
+  \item journalisation des erreurs critiques.
+\end{itemize}
+
+\subsection{Performance}
+\begin{itemize}[leftmargin=1.2cm]
+  \item temps de reponse API acceptable en usage nominal;
+  \item gestion de volume de contacts/campagnes;
+  \item support des operations asynchrones (envoi massif, generation IA).
+\end{itemize}
+
+\subsection{Maintenabilite}
+\begin{itemize}[leftmargin=1.2cm]
+  \item architecture modulaire;
+  \item separation claire presentation/metier/persistance;
+  \item code lisible et extensible.
+\end{itemize}
+
+\subsection{Disponibilite et fiabilite}
+\begin{itemize}[leftmargin=1.2cm]
+  \item resilience en cas de panne service IA (fallback);
+  \item gestion des erreurs d'envoi email;
+  \item reprise operationnelle et relance de campagnes.
+\end{itemize}
+
+\section{Cas d'utilisation (Use Case Diagram avec explication)}
+\subsection{Acteurs}
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Administrateur securite}: configure et pilote le systeme.
+  \item \textbf{Analyste / Manager}: consulte analytics et rapports.
+  \item \textbf{Utilisateur cible}: recoit les emails et interagit (clic/report/formation).
+\end{itemize}
+
+\subsection{Description textuelle du diagramme Use Case}
+Le diagramme de cas d'utilisation comporte trois acteurs principaux connectes aux cas:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textit{Administrateur securite} $\rightarrow$ Gerer contacts, Creer campagne, Lancer campagne, Suspendre campagne, Configurer types d'attaque, Consulter KPI.
+  \item \textit{Analyste} $\rightarrow$ Consulter dashboards, Exporter rapports, Analyser tendances.
+  \item \textit{Utilisateur cible} $\rightarrow$ Ouvrir email, Signaler phishing, Completer formation.
+\end{itemize}
+
+Relations \textit{include/extend} decrites:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textit{Lancer campagne} inclut \textit{Generer emails} puis \textit{Envoyer emails}.
+  \item \textit{Traiter clic} inclut \textit{Mise a jour score} et \textit{Attribuer formation}.
+  \item \textit{Consulter analytics} inclut \textit{Agreger metriques}.
+\end{itemize}
+
+\chapter{Conception technique du systeme}
+
+\section{Architecture backend}
+\subsection{Couches logiques}
+Le backend suit une organisation en couches:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Routes API}: point d'entree HTTP.
+  \item \textbf{Controllers}: orchestration des requetes/reponses.
+  \item \textbf{Services}: logique metier complexe (PhishingService, RLAgentService).
+  \item \textbf{Models ORM}: acces et relations aux donnees.
+  \item \textbf{Migrations}: evolution du schema.
+\end{itemize}
+
+\subsection{Conception orientee domaine}
+Le domaine central est compose de sous-domaines:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textit{Identity \& Access};
+  \item \textit{Campaign Management};
+  \item \textit{Behavior Tracking};
+  \item \textit{Risk Scoring};
+  \item \textit{Training Remediation};
+  \item \textit{Analytics \& Reporting}.
+\end{itemize}
+
+\section{Architecture frontend}
+\subsection{Organisation fonctionnelle}
+Le frontend est organise par pages metier:
+\begin{itemize}[leftmargin=1.2cm]
+  \item Dashboard
+  \item Campaigns
+  \item Risk Analytics
+  \item Analytics
+  \item Training
+  \item Users
+  \item Reports
+  \item Settings / Profile
+\end{itemize}
+
+Cette approche favorise la lisibilite fonctionnelle et la separation des responsibilities UI.
+
+\subsection{Navigation et garde d'acces}
+La navigation est centralisee dans un routeur applicatif. Une garde \texttt{PrivateRoute} assure que les pages sensibles ne sont accessibles qu'aux sessions authentifiees.
+
+\section{Diagrammes UML (description textuelle)}
+\subsection{Diagramme de classes}
+Le diagramme de classes inclut principalement:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{Campaign} lie a \texttt{CampaignMetrics}, \texttt{SentPhishingEmail}, \texttt{BehavioralEvent};
+  \item \texttt{Contact} lie a \texttt{UserRiskScore}, \texttt{Training}, \texttt{BehavioralEvent};
+  \item \texttt{RLPolicy} lie a \texttt{Campaign} et potentiellement \texttt{Contact};
+  \item \texttt{TrainingModule} lie a \texttt{Training}.
+\end{itemize}
+
+Ce modele traduit une relation forte entre simulation (campagne), comportement (events) et remediation (training).
+
+\subsection{Diagramme de sequence: lancement de campagne}
+Sequence decrite:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item L'administrateur soumet ``Lancer campagne'' depuis le frontend.
+  \item Le frontend appelle \texttt{POST /campaigns/\{id\}/launch}.
+  \item Le controller backend delegue au \texttt{PhishingService}.
+  \item Le service recupere les emails \texttt{pending}, envoie via mailer, met a jour les statuts.
+  \item Le service met a jour les metriques campagne.
+  \item L'API renvoie confirmation et etat actualise.
+  \item Le frontend rafraichit la liste des campagnes et affiche un toast.
+\end{enumerate}
+
+\subsection{Diagramme de sequence: clic utilisateur}
+\begin{enumerate}[leftmargin=1.2cm]
+  \item L'utilisateur clique le lien tracke.
+  \item Requete publique sur \texttt{/track/click/\{token\}}.
+  \item Backend identifie le mail concerne.
+  \item Creation d'evenement comportemental ``click''.
+  \item Mise a jour score utilisateur.
+  \item Eventuelle mise a jour RL reward.
+  \item Attribution d'une formation.
+  \item Retour reponse de tracking.
+\end{enumerate}
+
+\subsection{Diagramme de sequence: signalement}
+\begin{enumerate}[leftmargin=1.2cm]
+  \item L'utilisateur clique ``Signaler ce phishing''.
+  \item API enregistre un evenement ``report''.
+  \item Score de risque diminue.
+  \item Metriques campagne ajustees.
+\end{enumerate}
+
+\section{Modelisation de la base de donnees}
+\subsection{Tables centrales}
+\begin{longtable}{p{4.3cm} p{8.4cm}}
+\toprule
+\textbf{Table} & \textbf{Description} \\
+\midrule
+\endhead
+users & Utilisateurs applicatifs (authentification) \\
+contacts & Cibles des campagnes (profil RH/metier) \\
+campaigns & Campagnes de simulation et configuration \\
+sent\_phishing\_emails & Emails generes/envoies/statuts/tracking token \\
+behavioral\_events & Evenements clic/signalement avec horodatage \\
+user\_risk\_scores & Score et niveau de risque par contact \\
+training\_modules & Catalogue de modules pedagogiques \\
+trainings & Assignations et progression de formation \\
+campaign\_metrics & KPIs de campagne (CTR, precision, AUC) \\
+rl\_policies & Donnees d'adaptation comportementale \\
+\bottomrule
+\end{longtable}
+
+\subsection{Description de l'ERD (sans image)}
+L'ERD peut etre lu ainsi:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{users (1) --- (N) campaigns}
+  \item \texttt{contacts (1) --- (N) behavioral\_events}
+  \item \texttt{campaigns (1) --- (N) behavioral\_events}
+  \item \texttt{contacts (1) --- (1) user\_risk\_scores}
+  \item \texttt{campaigns (1) --- (N) sent\_phishing\_emails}
+  \item \texttt{contacts (1) --- (N) trainings}
+  \item \texttt{training\_modules (1) --- (N) trainings}
+\end{itemize}
+
+\chapter{Implementation du backend (API et logique metier)}
+
+\section{Technologies utilisees}
+\begin{itemize}[leftmargin=1.2cm]
+  \item PHP 8.x
+  \item Laravel
+  \item Eloquent ORM
+  \item Sanctum
+  \item Mail subsystem
+  \item Intégration IA via HTTP (Gemini API)
+\end{itemize}
+
+\section{Structure du projet backend}
+Organisation representative:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{app/Http/Controllers/Api}: controllers REST
+  \item \texttt{app/Services}: logique metier
+  \item \texttt{app/Models}: modeles Eloquent
+  \item \texttt{routes/api.php}: contrat API
+  \item \texttt{database/migrations}: schema de donnees
+\end{itemize}
+
+\section{Endpoints API}
+\subsection{Authentification}
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{POST /api/v1/register}
+  \item \texttt{POST /api/v1/login}
+  \item \texttt{POST /api/v1/logout}
+  \item \texttt{GET /api/v1/user}
+  \item \texttt{PUT /api/v1/user}
+\end{itemize}
+
+\subsection{Metier principal}
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{/contacts} (CRUD + import + risk score)
+  \item \texttt{/campaigns} (CRUD + pause/resume/launch + metrics)
+  \item \texttt{/analytics/*}
+  \item \texttt{/trainings, /training-modules}
+  \item \texttt{/reports, /email-templates, /departments}
+\end{itemize}
+
+\subsection{Tracking public}
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{/track/click/\{token\}}
+  \item \texttt{/track/report/\{token\}}
+  \item \texttt{/track/training/\{training\}}
+\end{itemize}
+
+\section{Gestion de l'authentification et securite}
+\subsection{Authentification Sanctum}
+Le backend emet un token personnel a la connexion. Ce token est fourni dans l'en-tete \texttt{Authorization: Bearer ...}. Les routes sensibles sont protegees par le middleware \texttt{auth:sanctum}.
+
+\subsection{Validation des donnees}
+Chaque endpoint important valide le payload entrant (types, champs obligatoires, formats, enums). Cette discipline reduit les erreurs applicatives et les vecteurs d'injection.
+
+\subsection{Points de securite appliques}
+\begin{itemize}[leftmargin=1.2cm]
+  \item hash des mots de passe;
+  \item controle d'acces sur endpoints internes;
+  \item trace d'erreurs d'envoi et d'appels externes.
+\end{itemize}
+
+\subsection{Ameliorations securite recommandees}
+\begin{itemize}[leftmargin=1.2cm]
+  \item renforcement rate limiting sur routes publiques de tracking;
+  \item signature HMAC des tokens/URLs;
+  \item durcissement CORS et politique CSP;
+  \item journal d'audit enrichi des actions administrateur.
+\end{itemize}
+
+\section{Exemples de code expliques}
+\subsection{Injection du token de tracking}
+Principe: le backend remplace les liens neutres \texttt{href="\#"} par une URL unique contenant un token aléatoire. Cette transformation garantit que chaque interaction est traçable au niveau individu/campagne.
+
+\begin{lstlisting}
+// Concept simplifie
+$token = Str::random(40);
+$trackingUrl = url("/api/v1/track/click/{$token}");
+$html = str_replace('href="#"', "href='{$trackingUrl}'", $html);
+\end{lstlisting}
+
+Explication:
+\begin{itemize}[leftmargin=1.2cm]
+  \item un token unique est attribue a chaque e-mail;
+  \item le click event devient mesurable;
+  \item la campagne peut calculer CTR et patterns comportementaux.
+\end{itemize}
+
+\subsection{Mise a jour du score de risque}
+\begin{lstlisting}
+if ($action === 'click') {
+   $newScore = min(100, $newScore + 15);
+} elseif ($action === 'report') {
+   $newScore = max(0, $newScore - 10);
 }
 \end{lstlisting}
 
-\section{Le Mode "Simulation Premium" (Fallback Mechanism)}
-Puisque l'API dépend d'OpenAI, des ruptures de service (Rate Limit, Quota épuisé) doivent être traitées gracieusement. Plutôt que de renvoyer une "Erreur 500" bloquant le processus de la plateforme au RSSI, notre mécanisme de \textit{fallback} bascule l'UI pour informer doucement que le quota limite l'IA en direct en affichant un "Technical Note: Simulation Premium Limit". Il redirige alors la requête sur des gabarits (Templates) statiques aléatoires générés à l'avance et stockés localement afin de poursuivre la campagne d'envoi.
-
-% ==========================================
-% CHAPITRE 6
-% ==========================================
-\chapter{Développement du Client (Frontend UI) et des Fonctionnalités Core}
-
-\section{Organisation du Projet React}
-Le répertoire \texttt{client/src} est ordonné pour garantir l'efficacité à long terme et une maintenance facilitée. Les pages clés construites sont répertoriées dans \texttt{client/src/pages} avec un système de routage robuste.
-Les routes majeures (Outre l'authentification \texttt{sign-in} et \texttt{sign-up}) sont :
-\begin{itemize}
-    \item \texttt{dashboard.tsx} : Le poste de commandement. Utilisation de graphiques, de \textit{cards} Shadcn pour indiquer les statistiques primordiales : Nombre d'employés compromis, Taux d'ouverture, Évolution dans le temps.
-    \item \texttt{campaigns.tsx} : Listing de toutes les configurations de phishing.
-    \item \texttt{risk-analytics.tsx} et \texttt{tables.tsx} : Pages de forage de données (Drill-Down) où le "Score de risque" des entreprises est ventilé géographiquement et hiérarchiquement.
-    \item \texttt{training.tsx} : Interfaçage avec les futures évolutions où le système d'entrainement recommandera un cours spécifique sur la cybersécurité selon la faille exacte où un employé a échoué (Ingénierie Sociale téléphonique ou Email d'urgence).
+Explication:
+\begin{itemize}[leftmargin=1.2cm]
+  \item un clic augmente la vulnerabilite observee;
+  \item un signalement traduit une posture defensive;
+  \item des bornes [0,100] assurent la stabilite de l'indicateur.
 \end{itemize}
 
-\section{Le Bug et le Concept du "Read-Only Preview"}
-\textbf{Problématique rencontrée au développement :} 
-Récemment dans l'historique du développement, l'interface de \textit{Campaign Management} souffrait d'un \textit{UI Bug} majeur. Lorsqu'une campagne avait pour statut `Actif` ou `Complété`, elle devait être verrouillée en édition. Cependant le mode \textit{Read-Only} empêchait l'appel initial chargé de récupérer le rendu complet de la prévisualisation de l'email généré par l'IA. Ainsi, le RSSI ne pouvait pas se remémorer ce qu'il venait juste d'expédier.
-
-\textbf{Résolution technique :}
-Au niveau de l'architecture React, nous avons dû modifier la gestion de l'effet de cycle de vie dans les composants parents. En modifiant les dépendances du Hook \texttt{useEffect()} au sein du \texttt{campaigns.tsx}, l'algorithme a été ajusté afin que si le \texttt{mode === 'view'}, le composant déclenche asynchronement une requête de consultation isolée sans valider les formulaires d'édition, rendant ainsi le rendu des prévisualisations de contenu (HTML et visuel exact de l'email expédié) parfait.
-
-\begin{lstlisting}[language=java, caption=Logique asynchrone modifiee dans useEffect (TypeScript React)]
-useEffect(() => {
-    const loadCampaignDetails = async () => {
-        if (campaignId && (mode === 'edit' || mode === 'view')) {
-            const data = await ApiService.getCampaign(campaignId);
-            setCampaignState(data);
-            // Assure le chargement specifique des Previews AI en lecture seule
-            if(data.hasGeneratedEmail) {
-               fetchAiPreview(data.emailTemplateId);
-            }
-        }
-    };
-    loadCampaignDetails();
-}, [campaignId, mode]);
+\subsection{Adaptation simplifiee type RL}
+\begin{lstlisting}
+if (rand(1,100) <= 15) {
+  // exploration
+  return randomAction();
+}
+// exploitation basee sur click_rate/report_rate
 \end{lstlisting}
 
-\section{Esthétisme, Fluidité et Micro-Animations}
-Conformément à nos spécifications initiales concernant le caractère extrêmement premium de l'UI (qui s'oppose gravement aux solutions Legacy peu esthétiques existantes sur le marché), nous n'avons utilisé que TailwindCSS avec de curieuses palettes de couleurs HSL calibrées. 
-Chaque événement (création d'une campagne, envoi d'emails par paquets) déploie un système dynamique de \textit{Toasters} ou notifications. Lors du calcul de risque \textit{Humain}, des variables SVG avec gradient gèrent finement le passage d'une coloration de statut Sûr (Vert) à Risqué (Rouge) proportionnellement au comportement tracé en base de données de vos collaborateurs.
-
-\section{Optimisations Récentes et Automatisation Avancée}
-Suite aux retours et aux tests intensifs, plusieurs fonctionnalités critiques d'automatisation ont été intégrées pour rendre la plateforme véritablement autonome :
-
-\begin{itemize}
-    \item \textbf{Planification Intelligente (Scheduling)} : Un système d'ordonnancement basé sur les tâches de fond de Laravel a été mis en place. L'administrateur peut désormais définir une date et une heure précises pour l'envoi. Le serveur traite automatiquement ces campagnes planifiées chaque minute sans intervention humaine.
-    \item \textbf{Génération Anticipée des Previews} : Pour corriger le manque de visibilité en phase de conception, les emails de phishing sont maintenant générés dès la création de la campagne (mode brouillon). Cela permet au RSSI de prévisualiser et de valider le contenu généré par l'IA avant toute planification ou lancement.
-    \item \textbf{Clôture Automatique des Simulations} : Le système suit en temps réel le taux de réaction. Lorsqu'un taux de 100\% est atteint (tous les destinataires ont soit cliqué, soit signalé l'email), la campagne passe automatiquement au statut "Terminé", archivant ainsi les résultats et calculant le score final.
-    \item \textbf{Sécurité et Confirmation} : Ajout de dialogues de confirmation critiques, notamment lors du "Renvoyer", précisant explicitement que l'envoi ne cible que les personnes n'ayant pas encore interagi, évitant ainsi le harcèlement inutile des employés déjà vigilants.
+Explication:
+\begin{itemize}[leftmargin=1.2cm]
+  \item l'exploration evite la rigidite des scenarios;
+  \item l'exploitation personnalise selon comportement historique;
+  \item compromis utile entre simplicite et adaptation.
 \end{itemize}
 
-% ==========================================
-% CHAPITRE 7
-% ==========================================
-\chapter{Déploiement et Avancement Global des Travaux}
+\chapter{Implementation du frontend (interface client)}
 
-\section{Bilan de l'état actuel de la solution}
-L'architecture actuelle permet sans défaut le déroulement du flux de bout en bout ("de A à Z" en l'état) :
-\begin{enumerate}
-    \item L'administrateur sécurisé lance l'UI client (\texttt{npm run dev} depuis le dossier client).
-    \item L'API Laravel réceptionne la charge de traitement (\texttt{php artisan serve} depuis le dossier backend).
-    \item Dans l'UI, l'administrateur crée sa campagne (Targeting départements spécifiques).
-    \item Le modèle demande à l'Opérateur IA (via le backend connectant à OpenAI) de préparer l'ingénierie sociale de l'email en format HTML avec trackers dissimulés.
-    \item Grâce à la correction du système "Read-Only", la revue de campagne fonctionne de manière optimale. Il valide la campagne.
-    \item Le module \texttt{server/services/email.ts} prend le relai. Actuellement, sans informations SMTP (Gmail, Brevo SMTP par exemple), la solution crée instantanément un serveur Ethereal avec des loggers virtuels démontrant que le moteur asynchrone permet bien un flux important de connexions.
+\section{Technologies utilisees}
+\begin{itemize}[leftmargin=1.2cm]
+  \item React + TypeScript
+  \item React Router
+  \item React Query
+  \item Axios
+  \item Composants UI + Tailwind CSS
+\end{itemize}
+
+\section{Structure du projet frontend}
+Organisation representative:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{src/pages}: pages metier
+  \item \texttt{src/components}: composants UI/layout/charts
+  \item \texttt{src/services/api.ts}: client HTTP et wrappers d'API
+  \item \texttt{src/hooks/useApi.ts}: hooks de requetes/mutations
+  \item \texttt{src/store}: etat global session
+\end{itemize}
+
+\section{Gestion des etats}
+\subsection{Etat de session}
+Le store global maintient le token, l'utilisateur courant et le statut d'authentification. Au chargement, l'application tente de recuperer le profil utilisateur; en cas d'echec 401, elle invalide la session.
+
+\subsection{Etat serveur cache}
+React Query est utilise pour:
+\begin{itemize}[leftmargin=1.2cm]
+  \item cacher les resultats d'API;
+  \item eviter les requetes redondantes;
+  \item invalider intelligemment les donnees apres mutations.
+\end{itemize}
+
+\subsection{Etat UI local}
+Chaque page gere ses filtres, dialogs, formulaires, modes d'edition et feedback utilisateur (toasts, loading states).
+
+\section{Communication frontend-backend}
+\subsection{Client Axios central}
+Le client Axios:
+\begin{itemize}[leftmargin=1.2cm]
+  \item ajoute automatiquement le token;
+  \item uniforme les headers;
+  \item intercepte les 401 et redirige vers login.
+\end{itemize}
+
+\subsection{Pattern appels API}
+Les appels sont encapsules par domaine:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{authApi}
+  \item \texttt{campaignsApi}
+  \item \texttt{usersApi}
+  \item \texttt{analyticsApi}
+  \item \texttt{trainingApi}
+\end{itemize}
+
+Ce pattern rend l'integration lisible et facilite l'evolution des endpoints.
+
+\section{Interfaces principales avec explications}
+\subsection{Interface ``Campaigns''}
+Fonctions majeures:
+\begin{itemize}[leftmargin=1.2cm]
+  \item creation/edition d'une campagne;
+  \item choix type d'attaque et difficulte;
+  \item ciblage par departements ou contacts;
+  \item lancement/pause/reprise/relance;
+  \item visualisation du contenu email;
+  \item export PDF/Excel.
+\end{itemize}
+
+Valeur ajoutee UX:
+\begin{itemize}[leftmargin=1.2cm]
+  \item badges de statut;
+  \item dialogues de confirmation sur actions irreversibles;
+  \item affichage de progression et metriques;
+  \item verrouillage en lecture seule pour campagnes deja lancees.
+\end{itemize}
+
+\subsection{Interface ``Risk Analytics''}
+Fonctions:
+\begin{itemize}[leftmargin=1.2cm]
+  \item score global de risque;
+  \item tendances par departement;
+  \item radar de vecteurs d'attaque psychologique;
+  \item classement utilisateurs a haut risque.
+\end{itemize}
+
+Utilite metier:
+\begin{itemize}[leftmargin=1.2cm]
+  \item priorisation des actions de formation;
+  \item visualisation manageriale des expositions;
+  \item suivi des effets des campagnes dans le temps.
+\end{itemize}
+
+\subsection{Interface ``Reports''}
+Elle consolide les indicateurs pour communication transversale (RSSI, RH, direction) et facilite l'export.
+
+\keypoint{Conclusion de la section frontend}{
+L'implementation frontend privilegie la lisibilite operationnelle, la rapidite d'execution des actions metier et la coherence ergonomique. La structure par pages fonctionnelles, combinee a une couche API centralisee, garantit une bonne maintenabilite et facilite les evolutions futures.
+}
+
+\chapter{Captures d'ecran et description de l'application}
+
+Cette section est dediee a la documentation visuelle de l'application. Chaque sous-section contient un emplacement de capture, une description fonctionnelle de l'ecran, les actions disponibles et le parcours utilisateur attendu.
+
+\keypoint{Palette visuelle recommandee pour export PDF/Word}{
+\textbf{Titres principaux}: bleu profond (\#1F4E79) \\
+\textbf{Sous-titres}: bleu secondaire (\#2D6A9F) \\
+\textbf{Encadres et zones d'information}: fond gris clair (\#F4F7FA) avec bordure (\#D7DEE8) \\
+\textbf{Texte courant}: gris anthracite (\#2E3440)
+}
+
+\section{Ecran de connexion}
+\captureplaceholder
+\textbf{Description de l'interface:} cet ecran constitue le point d'entree de l'application. Il presente un formulaire d'authentification simple avec champs d'identification et actions de connexion.
+
+\textbf{Fonctionnalites disponibles:}
+\begin{itemize}[leftmargin=1.2cm]
+  \item saisie de l'email et du mot de passe;
+  \item validation des champs en cas d'erreur;
+  \item redirection automatique vers le dashboard apres succes.
+\end{itemize}
+
+\textbf{Interaction utilisateur:} l'utilisateur saisit ses identifiants, soumet le formulaire, puis accede aux pages protegees selon son role.
+
+\section{Dashboard principal}
+\captureplaceholder
+\textbf{Description de l'interface:} le dashboard centralise les indicateurs critiques (risque global, tendances recentes, campagnes actives). Il offre une vision synthétique pour la prise de decision rapide.
+
+\textbf{Fonctionnalites disponibles:}
+\begin{itemize}[leftmargin=1.2cm]
+  \item consultation des KPI globaux;
+  \item visualisation des tendances de risque;
+  \item acces rapide vers les modules Campagnes, Analytics et Rapports.
+\end{itemize}
+
+\textbf{Interaction utilisateur:} l'analyste identifie les alertes prioritaires puis navigue vers la page la plus pertinente pour investiguer.
+
+\section{Page de gestion des campagnes}
+\captureplaceholder
+\textbf{Description de l'interface:} cette page est le centre operationnel de la plateforme. Elle affiche la liste des campagnes avec statuts, difficultes, metriques et actions contextuelles.
+
+\textbf{Fonctionnalites disponibles:}
+\begin{itemize}[leftmargin=1.2cm]
+  \item creation, modification et suppression de campagnes;
+  \item filtres par statut, difficulte et recherche textuelle;
+  \item lancement, pause, reprise et relance des campagnes.
+\end{itemize}
+
+\textbf{Interaction utilisateur:} l'administrateur planifie une campagne, verifie sa configuration, puis la lance et suit son evolution en temps reel.
+
+\section{Formulaire de creation de campagne}
+\captureplaceholder
+\textbf{Description de l'interface:} ce formulaire regroupe les paramètres strategiques de simulation: nom, type d'attaque, niveau de difficulte, ciblage et options d'automatisation.
+
+\textbf{Fonctionnalites disponibles:}
+\begin{itemize}[leftmargin=1.2cm]
+  \item selection du type d'attaque et du niveau de difficulte;
+  \item ciblage global, par departement ou par utilisateur;
+  \item previsualisation du contenu e-mail avant validation.
+\end{itemize}
+
+\textbf{Interaction utilisateur:} l'operateur ajuste les paramètres puis enregistre la campagne. Un retour visuel confirme la prise en compte.
+
+\section{Analyse de risque (Risk Analytics)}
+\captureplaceholder
+\textbf{Description de l'interface:} cet ecran fournit une vue analytique approfondie du risque humain, avec graphiques de tendance, radar de vulnerabilites et classement des profils sensibles.
+
+\textbf{Fonctionnalites disponibles:}
+\begin{itemize}[leftmargin=1.2cm]
+  \item filtre par departement;
+  \item tableau des utilisateurs a haut risque;
+  \item export des analyses vers PDF et Excel.
+\end{itemize}
+
+\textbf{Interaction utilisateur:} le responsable securite identifie les zones de risque eleve, priorise les actions de remédiation et suit l'impact des campagnes.
+
+\section{Page Utilisateurs / Contacts}
+\captureplaceholder
+\textbf{Description de l'interface:} la page utilisateurs permet de consulter le referentiel des cibles, leurs informations metier et leur historique comportemental.
+
+\textbf{Fonctionnalites disponibles:}
+\begin{itemize}[leftmargin=1.2cm]
+  \item ajout et edition de profils;
+  \item import en masse de contacts;
+  \item consultation du score individuel et de l'historique.
+\end{itemize}
+
+\textbf{Interaction utilisateur:} l'administrateur met a jour le portefeuille de cibles et segmente les populations pour les futures campagnes.
+
+\section{Page Rapports}
+\captureplaceholder
+\textbf{Description de l'interface:} cet ecran regroupe les resultats consolidés des campagnes et facilite la communication vers les parties prenantes.
+
+\textbf{Fonctionnalites disponibles:}
+\begin{itemize}[leftmargin=1.2cm]
+  \item consultation des indicateurs consolides;
+  \item generation et telechargement de rapports;
+  \item comparaison inter-campagnes.
+\end{itemize}
+
+\textbf{Interaction utilisateur:} l'analyste prepare un rapport de synthese pour le management et documente les actions recommandees.
+
+\section{Page Formation}
+\captureplaceholder
+\textbf{Description de l'interface:} la section formation presente les modules assignes, l'etat de progression et les contenus pedagogiques post-incident.
+
+\textbf{Fonctionnalites disponibles:}
+\begin{itemize}[leftmargin=1.2cm]
+  \item suivi des assignations et completions;
+  \item consultation des contenus de remédiation;
+  \item priorisation des utilisateurs en retard de formation.
+\end{itemize}
+
+\textbf{Interaction utilisateur:} le responsable programme suit les taux de completion et ajuste les campagnes de sensibilisation.
+
+\section{Parametres et profil}
+\captureplaceholder
+\textbf{Description de l'interface:} les ecrans ``Profil'' et ``Parametres'' permettent d'adapter les informations de compte et les preferances d'usage.
+
+\textbf{Fonctionnalites disponibles:}
+\begin{itemize}[leftmargin=1.2cm]
+  \item modification des informations personnelles;
+  \item mise a jour des preferances organisationnelles;
+  \item gestion des parametres globaux de l'application.
+\end{itemize}
+
+\textbf{Interaction utilisateur:} chaque utilisateur ajuste son espace de travail pour une experience plus fluide et conforme a son contexte.
+
+\keypoint{Conclusion de la section Captures d'ecran}{
+L'ajout de captures commentees renforce la valeur pedagogique du rapport. Cette section facilite la comprehension de l'application par un jury, un encadrant ou une equipe de reprise, en reliant directement l'architecture technique aux ecrans reels d'exploitation.
+}
+
+\chapter{Strategie de tests et validation}
+
+\section{Types de tests}
+\subsection{Tests unitaires}
+Objectif: verifier les unites de logique metier isolees (calcul score, transitions de statut, selection de cibles).
+
+Exemples:
+\begin{itemize}[leftmargin=1.2cm]
+  \item test de variation score click/report;
+  \item test de classification des niveaux de risque;
+  \item test de remplacement correct des liens de tracking.
+\end{itemize}
+
+\subsection{Tests d'integration}
+Objectif: verifier l'interaction entre composants backend (controller + service + ORM + DB).
+
+Exemples:
+\begin{itemize}[leftmargin=1.2cm]
+  \item creation campagne puis generation emails;
+  \item route tracking click puis creation event et mise a jour score;
+  \item completion de training puis impact analytics.
+\end{itemize}
+
+\subsection{Tests end-to-end (E2E)}
+Objectif: valider les parcours utilisateurs complets frontend+backend.
+
+Scenarios:
+\begin{itemize}[leftmargin=1.2cm]
+  \item login $\rightarrow$ creer campagne $\rightarrow$ launch $\rightarrow$ verifier statut;
+  \item consulter analytics puis exporter rapport;
+  \item ouvrir profil utilisateur et verifier historique de risque.
+\end{itemize}
+
+\subsection{Tests de non-regression}
+Apres chaque evolution majeure:
+\begin{itemize}[leftmargin=1.2cm]
+  \item verification du contrat API;
+  \item verification du rendu des pages critiques;
+  \item verification des cas limites (campagne sans cibles, token invalide, etc.).
+\end{itemize}
+
+\section{Outils utilises}
+\begin{itemize}[leftmargin=1.2cm]
+  \item Backend: PHPUnit/Laravel test runner (recommande)
+  \item Frontend: Vitest/Jest + Testing Library (recommande)
+  \item E2E: Playwright/Cypress (recommande)
+  \item Qualite statique: ESLint + type checking TypeScript
+\end{itemize}
+
+\section{Plan de validation propose}
+\begin{longtable}{p{5cm} p{4cm} p{5cm}}
+\toprule
+\textbf{Objet teste} & \textbf{Type de test} & \textbf{Critere de succes} \\
+\midrule
+\endhead
+Authentification & Integration & Login renvoie token + user, routes protegees inaccessibles sans token \\
+Creation campagne & Integration & Donnees persistantes, metriques initialisees, pas d'erreur validation \\
+Launch campagne & Integration & Emails statuts ``sent'' ou ``failed'', campagne active \\
+Tracking click & Integration & Event cree, score augmente, formation assignee \\
+Tracking report & Integration & Event cree, score diminue, metriques ajustees \\
+Liste campagnes frontend & E2E & Affichage coherent avec filtres et statuts \\
+Analyse de risque & E2E & Graphes et tableaux charges sans erreur API \\
+Exports & E2E & Fichier genere et telecharge correctement \\
+\bottomrule
+\end{longtable}
+
+\section{Resultats des tests}
+Dans l'etat actuel du projet, l'infrastructure de tests automatisee est encore perfectible. Toutefois, les validations manuelles des parcours majeurs montrent:
+\begin{itemize}[leftmargin=1.2cm]
+  \item bonne stabilite fonctionnelle des flux principaux;
+  \item cohérence globale des interactions campagne/tracking/scoring;
+  \item besoin de renforcer l'automatisation pour fiabiliser les evolutions futures.
+\end{itemize}
+
+\chapter{Deploiement et mise en production}
+
+\section{Environnement de deploiement}
+\subsection{Developpement}
+\begin{itemize}[leftmargin=1.2cm]
+  \item Backend lance localement (serveur PHP/Laravel);
+  \item Frontend lance via Vite en mode dev;
+  \item Base de donnees locale de test.
+\end{itemize}
+
+\subsection{Pre-production}
+Environnement miroir plus proche de la production:
+\begin{itemize}[leftmargin=1.2cm]
+  \item variables d'environnement separees;
+  \item service mail de test;
+  \item monitoring de base.
+\end{itemize}
+
+\subsection{Production}
+Architecture cible recommandee:
+\begin{itemize}[leftmargin=1.2cm]
+  \item serveur applicatif backend;
+  \item stockage DB gere;
+  \item frontend statique servi par CDN/reverse proxy;
+  \item service de queue pour traitements lourds;
+  \item supervision logs + metriques.
+\end{itemize}
+
+\section{Outils et plateformes}
+\begin{itemize}[leftmargin=1.2cm]
+  \item CI/CD (GitHub Actions/GitLab CI)
+  \item Conteneurisation Docker (option recommandee)
+  \item Reverse proxy Nginx
+  \item Monitoring (Grafana/Prometheus ou equivalent)
+  \item Gestion des secrets (vault ou variables chiffrees)
+\end{itemize}
+
+\section{Procedure de mise en production}
+\subsection{Etapes techniques}
+\begin{enumerate}[leftmargin=1.2cm]
+  \item validation branche release;
+  \item execution tests automatises;
+  \item build frontend;
+  \item migration base de donnees;
+  \item deploiement backend;
+  \item deploiement assets frontend;
+  \item verification smoke tests;
+  \item ouverture progressive trafic.
 \end{enumerate}
 
-\section{Gestion du Flux d'équipe via Git}
-Afin de documenter la stabilité des correctifs apportés suite à nos optimisations et garantir la collaboration future, la procédure complète depuis notre stade de travail actuel a été \textit{poussée (Push)} de manière centralisée.
-\begin{itemize}
-    \item Une nouvelle branche a été créée (ex: Lundi, New).
-    \item Mise à jour globale et drastique du fichier racine `README.md` contenant les procédures claires et séquencées pour la base de données, la configuration de Laravel `.env`, les tokens OpenAI, et l'exécutable des frontends (NPM) à destination de tout instructeur ou collaborateur qui souhaite tester le développement ou reproduire l'application localement.
+\subsection{Checklist de go-live}
+\begin{itemize}[leftmargin=1.2cm]
+  \item variables \texttt{APP\_KEY}, DB, MAIL, IA configurees;
+  \item HTTPS actif;
+  \item politique de sauvegarde active;
+  \item plan rollback documente;
+  \item alerting operationnel configure.
 \end{itemize}
 
-% ==========================================
-% CONCLUSION
-% ==========================================
-\chapter*{Conclusion Générale et Perspectives}
-\addcontentsline{toc}{chapter}{Conclusion Générale et Perspectives}
-
-Le travail investi dans l'élaboration de la plateforme \textit{AI-Powered Phishing Simulation \& Human Risk Scoring} démontre indubitablement la faisabilité d'adopter des technologies très modernes et performantes (Stack React/Vite épaulé par la stabilité de Laravel Framework) pour combler le pont nécessaire entre la cybersécurité offensive (Red Team) et l'apprentissage éducatif en milieu professionnel (Blue Team).
-
-L'introduction de modèles d'intelligence artificielle modernes transforme de vieux systèmes répétitifs de e-learning en de formidables moteurs adaptatifs de cyber-simulation. Nous avons réussi à contourner les impératifs des quotas d'appel aux API payantes en solidifiant le code via un robuste mode "Fallback Premium", ainsi qu'à parfaire l'interface utilisateur. La correction des anomalies mineures ayant affecté récemment l'interface des éditeurs, alliée au système centralisé du serveur Node (SMTP d'Ethereal), place le produit de conception à un stade prêt à l'implémentation en beta testeurs finaux.
-
-\textbf{Perspectives d'amélioration :}
-Parmi les multiples avenues et avancements à intégrer ultérieurement nous envisageons :
-\begin{enumerate}
-    \item \textbf{L'algorithmique de Reinforcement Learning (RL)} : L'entité \texttt{RLPolicy} pré-créée en base de données doit être interconnectée. Elle permettra au système de s'auto-optimiser indépendamment d'un appel API. Un département montrant une résistance accrue verra le système cibler de nouvelles voies de difficulté ("Phishing sur-mesure") lors de l'incrémentation asynchrone des campagnes automatisées récurrentes semestrielles.
-    \item \textbf{Migration des environnements (CI/CD) } : Passage des applications dans des conteneurs isolés via Docker/Docker-Compose conférant à la solution une scalabilité de type "Cloud-SaaS Enterprise".
-    \item \textbf{Intégration d'Outils SOAR} : Le Risk Scoring calculé pourrait être relayé via une API Webhook vers des pare-feux institutionnels afin de dynamiquement bloquer tout accès critique à de nouveaux employés tant que leur "Score Humain" reste dangereusement inférieur aux chartes de sécurité autorisées de l'entreprise.
+\section{Plan de rollback}
+En cas d'incident post-deploiement:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item retour a la version precedente de l'application;
+  \item restauration schema si migration critique;
+  \item verification integrite donnees;
+  \item communication interne incident.
 \end{enumerate}
 
-Le cycle de conception logicielle requiert de l'itération. À chaque nouvelle prouesse technologique insérée sur la branche de production du projet, ce présent document pourra incorporer dans  son chapitre des avancements les nouveaux paliers atteints.
+\chapter{Difficultes techniques rencontrees et solutions}
 
-\newpage
-% ==========================================
-% ANNEXES / BIBLIOGRAPHIE (Optionnel pour augmenter le nombre de page)
-% ==========================================
-\chapter*{Bibliographie}
-\addcontentsline{toc}{chapter}{Bibliographie}
-\begin{itemize}
-    \item Verizon Data Breach Investigations Report (DBIR) 2024. [En Ligne].
-    \item Modèles de Développement MVC et Conception REST API Backend PHP Laravel par Taylor Otwell.
-    \item Documentation Officielle React (Meta).
-    \item Ingénierie de Prompt : Utilisation de modèles "Zero-Shot" et LLM OpenAI par l'OpenAI Documentation Team.
-    \item Techniques d'Ingénierie Sociale de Kevin Mitnick - "The Art of Deception".
+\section{Problemes techniques}
+\subsection{Complexite du workflow campagne}
+Le cycle creation/generation/envoi/tracking/remediation implique plusieurs transitions de statut et de nombreux cas limites (emails deja envoyes, relance, interactions partielles).
+
+\textbf{Solution}: centraliser cette logique dans un service metier unique et introduire des statuts explicites.
+
+\subsection{Integration IA et robustesse}
+Les appels IA peuvent echouer (quota, latence, indisponibilite).
+
+\textbf{Solution}: fallback local de generation, retries, journalisation detaillee.
+
+\subsection{Coherence frontend-backend}
+Dans une architecture evolutive, certains endpoints peuvent diverger entre implementation backend et wrappers frontend.
+
+\textbf{Solution}: formaliser un contrat API unique (OpenAPI) et le valider en CI.
+
+\subsection{Qualite analytique}
+Certaines visualisations de demo utilisent des composantes pseudo-aleatoires pour enrichir l'affichage en phase prototype.
+
+\textbf{Solution}: basculer progressivement vers des indicateurs 100\% derives des donnees tracees.
+
+\section{Solutions apportees}
+\begin{itemize}[leftmargin=1.2cm]
+  \item decoupage clair des couches et services;
+  \item validation stricte des payloads;
+  \item ajout de metadonnees operationnelles (statuts, horodatages);
+  \item UX orientee prevention d'erreurs (dialogs, confirmations, modes read-only).
 \end{itemize}
 
-% Gagne des pages vides ou remplit le reste si l'on cherche l'extension brute
-\newpage
-\vspace*{\fill}
-\begin{center}
-    Document de projet mis à jour pour la session d'Avancement. \\
-    L'intégralité du code et de l'architecture logicielle de la plateforme est disponible sur le dépôt sécurisé.
-\end{center}
-\vspace*{\fill}
+\section{Retours d'experience}
+Le principal enseignement est que la valeur d'une plateforme de sensibilisation cyber ne vient pas seulement de la generation de scenarios, mais de la qualite de la boucle de feedback: observation comportementale fiable, scoring interpretable, remediation rapide et pilotage continu.
+
+\chapter{Conclusion generale et perspectives}
+
+\section{Bilan du projet}
+Le projet aboutit a une plateforme credible et fonctionnelle couvrant l'essentiel d'un programme de phishing simulation moderne:
+\begin{itemize}[leftmargin=1.2cm]
+  \item gestion complete du cycle campagne;
+  \item tracking comportemental exploitable;
+  \item scoring du risque utilisateur/departement;
+  \item capacites analytiques orientées decision;
+  \item remédiation pedagogique post-incident.
+\end{itemize}
+
+L'architecture technique montre une base solide et extensible, avec une bonne separation des responsabilites entre backend et frontend.
+
+\section{Ameliorations futures}
+\subsection{Axe technique}
+\begin{itemize}[leftmargin=1.2cm]
+  \item renforcer couverture de tests auto (unitaires, integration, E2E);
+  \item industrialiser le monitoring et l'observabilite;
+  \item normaliser strictement les contrats API.
+\end{itemize}
+
+\subsection{Axe data/IA}
+\begin{itemize}[leftmargin=1.2cm]
+  \item enrichir le modele de risque (features temporelles, profils metiers);
+  \item introduire des bandits contextuels plus formels;
+  \item versionner prompts et evaluer qualite IA.
+\end{itemize}
+
+\subsection{Axe metier/gouvernance}
+\begin{itemize}[leftmargin=1.2cm]
+  \item workflows d'approbation des campagnes sensibles;
+  \item rapports executifs automatiques;
+  \item alignement complet RGPD et auditabilite.
+\end{itemize}
+
+\section{Ouverture}
+La plateforme peut evoluer vers un veritable \textit{cockpit de resilience humaine} en cybersécurité, couvrant non seulement l'email phishing mais aussi les vecteurs SMS, messagerie instantanee et voice phishing, avec une intelligence adaptative explicable et un pilotage multi-entites.
+
+\appendix
+
+\chapter{Annexe A - Inventaire des endpoints principaux}
+\begin{longtable}{p{5.3cm} p{1.8cm} p{7cm}}
+\toprule
+\textbf{Endpoint} & \textbf{Methode} & \textbf{Role} \\
+\midrule
+\endhead
+/api/v1/register & POST & Inscription utilisateur \\
+/api/v1/login & POST & Connexion \\
+/api/v1/logout & POST & Deconnexion \\
+/api/v1/user & GET/PUT & Lecture/mise a jour profil \\
+/api/v1/contacts & CRUD & Gestion des contacts \\
+/api/v1/contacts/import & POST & Import contacts \\
+/api/v1/campaigns & CRUD & Gestion campagnes \\
+/api/v1/campaigns/\{id\}/launch & POST & Lancer campagne \\
+/api/v1/campaigns/\{id\}/pause & POST & Pause campagne \\
+/api/v1/campaigns/\{id\}/resume & POST & Reprise campagne \\
+/api/v1/campaigns/\{id\}/metrics & GET & Metriques campagne \\
+/api/v1/behavioral-events & GET/POST & Historique/create event \\
+/api/v1/risk-scores & GET/PUT & Scores de risque \\
+/api/v1/trainings & CRUD partiel & Suivi formations \\
+/api/v1/training-modules & CRUD & Catalogue formations \\
+/api/v1/reports & CRUD & Rapports \\
+/api/v1/analytics/click-rate-trend & GET & Tendance click/report \\
+/api/v1/analytics/risk-distribution & GET & Distribution risques \\
+/api/v1/analytics/campaign-performance & GET & Comparatif campagnes \\
+/api/v1/analytics/behavior-heatmap & GET & Heatmap comportementale \\
+/api/v1/analytics/training-effectiveness & GET & Efficacite formation \\
+/api/v1/analytics/department-risk & GET & Risque par departement \\
+/api/v1/analytics/global-metrics & GET & KPIs globaux \\
+/api/v1/ai/generate-template & POST & Generation email IA \\
+/api/v1/track/click/\{token\} & GET & Tracking clic \\
+/api/v1/track/report/\{token\} & GET & Tracking signalement \\
+/api/v1/track/training/\{training\} & GET & Validation formation \\
+\bottomrule
+\end{longtable}
+
+\chapter{Annexe B - Scenarios de tests detailles}
+\section*{Scenario 1: Creation et lancement campagne}
+\textbf{Precondition}: utilisateur authentifie, contacts presents.
+
+\textbf{Etapes}:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Ouvrir page Campagnes.
+  \item Creer campagne ``Spear Phishing Q2''.
+  \item Choisir difficulte ``difficile''.
+  \item Cibler departement ``Finance''.
+  \item Enregistrer puis lancer.
+\end{enumerate}
+
+\textbf{Resultat attendu}:
+\begin{itemize}[leftmargin=1.2cm]
+  \item statut campagne $\rightarrow$ active;
+  \item e-mails generes et marques sent/pending selon traitement;
+  \item metriques initiales visibles.
+\end{itemize}
+
+\section*{Scenario 2: Clic utilisateur}
+\textbf{Etapes}:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Ouvrir email simule.
+  \item Cliquer CTA.
+  \item Verifier en base: status clicked + behavioral event.
+  \item Verifier score utilisateur augmente.
+\end{enumerate}
+
+\textbf{Resultat attendu}:
+\begin{itemize}[leftmargin=1.2cm]
+  \item event click enregistre;
+  \item score mis a jour;
+  \item formation assignee.
+\end{itemize}
+
+\section*{Scenario 3: Signalement}
+\textbf{Etapes}:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Cliquer ``Signaler ce phishing''.
+  \item Verifier event report.
+  \item Verifier diminution du score.
+\end{enumerate}
+
+\textbf{Resultat attendu}:
+\begin{itemize}[leftmargin=1.2cm]
+  \item event report enregistre;
+  \item score ajuste a la baisse;
+  \item metriques campagne rafraichies.
+\end{itemize}
+
+\chapter{Annexe C - Guide de lecture des diagrammes UML}
+\section*{Use Case}
+Observer:
+\begin{itemize}[leftmargin=1.2cm]
+  \item acteurs externes;
+  \item cas metier centraux;
+  \item dependances include/extend.
+\end{itemize}
+
+\section*{Classes}
+Observer:
+\begin{itemize}[leftmargin=1.2cm]
+  \item entites fortes (Campaign, Contact, UserRiskScore);
+  \item cardinalites 1-1 et 1-N;
+  \item agregations fonctionnelles.
+\end{itemize}
+
+\section*{Sequence}
+Observer:
+\begin{itemize}[leftmargin=1.2cm]
+  \item ordre temporel des interactions;
+  \item appels synchrones/asynchrones;
+  \item points de persistance et mises a jour d'etat.
+\end{itemize}
+
+\chapter{Annexe D - Plan d'amelioration sur 12 mois}
+\begin{longtable}{p{2.5cm} p{4.5cm} p{5.5cm} p{2.5cm}}
+\toprule
+\textbf{Periode} & \textbf{Axe} & \textbf{Actions} & \textbf{Indicateur} \\
+\midrule
+\endhead
+M1-M3 & Qualite & Contrat API OpenAPI, tests unitaires critiques & Couverture > 50\% \\
+M3-M6 & Data & Analytics 100\% data-driven & 0 KPI simule \\
+M6-M9 & Securite & Hardening tokens tracking, audit log & 100\% actions tracees \\
+M9-M12 & IA & Personalisation avancée (bandits contextuels) & +X\% detection precoce \\
+\bottomrule
+\end{longtable}
+
+\chapter*{Bibliographie indicative}
+\addcontentsline{toc}{chapter}{Bibliographie indicative}
+\begin{enumerate}[leftmargin=1.2cm]
+  \item OWASP Foundation, \textit{OWASP Top 10}.
+  \item NIST, \textit{Cybersecurity Awareness and Training Guidance}.
+  \item ENISA, \textit{Cybersecurity Culture Guidelines}.
+  \item Documentation Laravel, \url{https://laravel.com/docs}.
+  \item Documentation React, \url{https://react.dev}.
+  \item Documentation TypeScript, \url{https://www.typescriptlang.org/docs}.
+  \item Documentation Axios et React Query.
+\end{enumerate}
 
 \end{document}

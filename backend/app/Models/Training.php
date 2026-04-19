@@ -16,6 +16,7 @@ class Training extends Model
         'status',
         'assigned_at',
         'completed_at',
+        'email_opened_at',
         'score',
         'ai_content',
     ];
@@ -23,6 +24,7 @@ class Training extends Model
     protected $casts = [
         'assigned_at' => 'datetime',
         'completed_at' => 'datetime',
+        'email_opened_at' => 'datetime',
         'score' => 'float',
     ];
 

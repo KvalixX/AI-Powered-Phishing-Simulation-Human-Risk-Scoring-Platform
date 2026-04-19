@@ -104,7 +104,7 @@ export default function Profile() {
     const reports = events.filter(e => e.event_type === 'report').length;
 
     const userTrainings = trainings.filter(t => t.contact_id === c.id);
-    const completedTrainings = userTrainings.filter(t => t.completed).length;
+    const completedTrainings = userTrainings.filter(t => t.status === 'completed').length;
 
     return {
       id: c.id,
@@ -180,9 +180,9 @@ export default function Profile() {
       const userTrainings = trainings.filter(t => t.contact_id === dynamicUser.id);
       if (userTrainings.length === 0) return [];
       return userTrainings.map(t => ({
-          name: t.content,
-          progress: t.completed ? 100 : 0,
-          status: t.completed ? "completed" : "not_started"
+          name: t.ai_content ? "Module IA" : (t.content || "Formation"),
+          progress: t.status === 'completed' ? 100 : 0,
+          status: t.status === 'completed' ? "completed" : "not_started"
       }));
   }, [trainings, dynamicUser.id]);
 
@@ -199,8 +199,8 @@ export default function Profile() {
       });
       const trainingEvents = trainings.filter(t => t.contact_id === dynamicUser.id).map(t => ({
           date: new Date(t.updated_at || Date.now()).toISOString().split('T')[0],
-          action: t.completed ? "training_completed" : "training_started",
-          campaign: t.content,
+          action: t.status === 'completed' ? "training_completed" : "training_started",
+          campaign: t.ai_content ? "Module IA" : (t.content || "Formation"),
           icon: GraduationCap,
           color: "text-blue-600 bg-blue-50"
       }));
@@ -269,29 +269,6 @@ export default function Profile() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="border-stone-600 text-stone-300 hover:bg-stone-700 hover:text-white"
-                    onClick={() => {
-                        toast({ title: "Préparation de la formation", description: `Assignation d'un module pour ${dynamicUser.name}...` });
-                        navigate('/training');
-                    }}
-                  >
-                    <GraduationCap className="w-4 h-4 mr-1.5" />
-                    Assign Training
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={() => {
-                        toast({ title: "Ajout à la campagne", description: `Profil de ${dynamicUser.name} ajouté à la sélection.` });
-                        navigate('/campaigns');
-                    }}
-                  >
-                    <Target className="w-4 h-4 mr-1.5" />
-                    Add to Campaign
-                  </Button>
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-4 mt-5">

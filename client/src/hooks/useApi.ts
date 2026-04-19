@@ -94,6 +94,8 @@ export function useTrainings() {
     return useQuery<any[]>({
         queryKey: ["/api/v1/trainings"],
         queryFn: api.getTrainings,
+        refetchOnWindowFocus: true,
+        refetchOnMount: "always",
     });
 }
 
