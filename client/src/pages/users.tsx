@@ -22,7 +22,8 @@ import {
   TrendingUp,
   TrendingDown,
   Download,
-  Printer
+  Printer,
+  FileText
 } from "lucide-react";
 import { 
   Dialog,
@@ -102,7 +103,7 @@ import {
 import { useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Contact } from "@/lib/api";
-import { exportToExcel, exportToPDF } from "@/lib/utils";
+import { exportToExcel, exportToPDF, downloadUserTemplateCSV } from "@/lib/utils";
 import { Upload } from "lucide-react";
 
 export default function Users() {
@@ -333,6 +334,10 @@ export default function Users() {
           <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importContacts.isPending}>
             <Upload className="w-4 h-4 mr-2" />
             {importContacts.isPending ? "Importation..." : "Importer CSV"}
+          </Button>
+          <Button variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={downloadUserTemplateCSV}>
+            <FileText className="w-4 h-4 mr-2" />
+            Modèle CSV
           </Button>
           <Button variant="outline" onClick={() => exportToPDF('app-content', 'utilisateurs_kira')}>
             <Download className="w-4 h-4 mr-2" />

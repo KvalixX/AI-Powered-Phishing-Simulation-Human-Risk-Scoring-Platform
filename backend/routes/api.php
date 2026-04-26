@@ -88,31 +88,31 @@ Route::prefix('v1')->group(function () {
 
         // ─── DASHBOARD ──────────────────────────────────────────────────────────
         Route::prefix('dashboard')->group(function () {
-            Route::get('metrics',          [DashboardController::class, 'metrics']);
-            Route::get('risk-trend',       [DashboardController::class, 'riskTrend']);
+            Route::get('metrics', [DashboardController::class, 'metrics']);
+            Route::get('risk-trend', [DashboardController::class, 'riskTrend']);
             Route::get('recent-campaigns', [DashboardController::class, 'recentCampaigns']);
-            Route::get('ai-insights',      [DashboardController::class, 'aiInsights']);
+            Route::get('ai-insights', [DashboardController::class, 'aiInsights']);
         });
 
         // ─── USERS (Contacts as platform users) ─────────────────────────────────
-        Route::get('users',                          [UserController::class, 'index']);
-        Route::post('users',                         [UserController::class, 'store']);
-        Route::get('users/{id}',                     [UserController::class, 'show']);
-        Route::put('users/{id}',                     [UserController::class, 'update']);
-        Route::delete('users/{id}',                  [UserController::class, 'destroy']);
-        Route::get('users/{id}/risk-history',        [UserController::class, 'riskHistory']);
-        Route::get('users/{id}/campaigns',           [UserController::class, 'campaigns']);
-        Route::post('users/{id}/training',           [UserController::class, 'assignTraining']);
+        Route::get('users', [UserController::class, 'index']);
+        Route::post('users', [UserController::class, 'store']);
+        Route::get('users/{id}', [UserController::class, 'show']);
+        Route::put('users/{id}', [UserController::class, 'update']);
+        Route::delete('users/{id}', [UserController::class, 'destroy']);
+        Route::get('users/{id}/risk-history', [UserController::class, 'riskHistory']);
+        Route::get('users/{id}/campaigns', [UserController::class, 'campaigns']);
+        Route::post('users/{id}/training', [UserController::class, 'assignTraining']);
 
         // ─── ANALYTICS ──────────────────────────────────────────────────────────
         Route::prefix('analytics')->group(function () {
-            Route::get('click-rate-trend',       [AnalyticsController::class, 'clickRateTrend']);
-            Route::get('risk-distribution',      [AnalyticsController::class, 'riskDistribution']);
-            Route::get('campaign-performance',   [AnalyticsController::class, 'campaignPerformance']);
-            Route::get('behavior-heatmap',       [AnalyticsController::class, 'behaviorHeatmap']);
+            Route::get('click-rate-trend', [AnalyticsController::class, 'clickRateTrend']);
+            Route::get('risk-distribution', [AnalyticsController::class, 'riskDistribution']);
+            Route::get('campaign-performance', [AnalyticsController::class, 'campaignPerformance']);
+            Route::get('behavior-heatmap', [AnalyticsController::class, 'behaviorHeatmap']);
             Route::get('training-effectiveness', [AnalyticsController::class, 'trainingEffectiveness']);
-            Route::get('department-risk',        [AnalyticsController::class, 'departmentRisk']);
-            Route::get('global-metrics',         [AnalyticsController::class, 'globalMetrics']);
+            Route::get('department-risk', [AnalyticsController::class, 'departmentRisk']);
+            Route::get('global-metrics', [AnalyticsController::class, 'globalMetrics']);
         });
 
         // ─── AI GENERATION ────────────────────────────────────────────────────────

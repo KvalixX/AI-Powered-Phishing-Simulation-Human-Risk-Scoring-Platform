@@ -205,6 +205,17 @@ export function useCreateReport() {
         },
     });
 }
+
+export function useDeleteReport() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => api.deleteReport(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["/api/v1/reports"] });
+        },
+    });
+}
+
 export function useDownloadReport() {
     return useMutation({
         mutationFn: (id: number) => api.downloadReport(id),

@@ -354,35 +354,6 @@ export default function Profile() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-2 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 dark:border-purple-800/50 dark:bg-stone-900">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2 text-stone-900 dark:text-white">
-                  <Brain className="w-4 h-4 text-purple-600" />
-                  AI Risk Assessment
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    { icon: AlertTriangle, color: "text-red-500", title: "Primary Risk", desc: "High susceptibility to urgency and social engineering. Clicked 5/8 campaigns in 6 months.", badge: "Urgency Attacks", badgeCls: "bg-red-100 text-red-700" },
-                    { icon: ZapIcon, color: "text-amber-500", title: "Recommendation", desc: "Assign 'Advanced Social Engineering' training immediately. Follow with a CEO fraud test.", badge: "Action Required", badgeCls: "bg-amber-100 text-amber-700" },
-                    { icon: CheckCircle2, color: "text-green-500", title: "Strengths", desc: "Reported the Zoom Update campaign. Shows awareness of malware distribution tactics.", badge: "Good Reporting", badgeCls: "bg-green-100 text-green-700" },
-                  ].map((item, i) => {
-                    const Icon = item.icon;
-                    return (
-                      <div key={i} className="p-4 bg-white dark:bg-stone-800 rounded-xl border border-purple-100 dark:border-stone-700">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Icon className={`w-4 h-4 ${item.color}`} />
-                          <p className="text-sm font-semibold text-stone-900 dark:text-white">{item.title}</p>
-                        </div>
-                        <p className="text-xs text-stone-600 dark:text-stone-400">{item.desc}</p>
-                        <Badge className={`mt-2 ${item.badgeCls}`}>{item.badge}</Badge>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </TabsContent>
 
