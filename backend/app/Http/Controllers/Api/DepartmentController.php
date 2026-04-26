@@ -18,7 +18,12 @@ class DepartmentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:departments',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('departments')->where(fn ($q) => $q->where('user_id', auth()->id()))
+            ],
             'description' => 'nullable|string',
         ]);
 
@@ -34,7 +39,12 @@ class DepartmentController extends Controller
     public function update(Request $request, Department $department): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255|unique:departments,name,' . $department->id,
+            'name' => [
+                'sometimes',
+                'string',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('departments')->ignore($department->id)->where(fn ($q) => $q->where('user_id', auth()->id()))
+            ],
             'description' => 'nullable|string',
         ]);
 

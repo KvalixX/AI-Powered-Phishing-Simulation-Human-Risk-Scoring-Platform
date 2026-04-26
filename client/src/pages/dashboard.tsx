@@ -38,14 +38,7 @@ import {
   Legend
 } from "recharts";
 
-const riskScoreData = [
-  { month: "Jan", score: 65 },
-  { month: "Fév", score: 58 },
-  { month: "Mar", score: 52 },
-  { month: "Avr", score: 48 },
-  { month: "Mai", score: 42 },
-  { month: "Juin", score: 38 },
-];
+const riskScoreData: any[] = [];
 
 
 const quickActions = [
@@ -139,12 +132,12 @@ export default function Dashboard() {
     if (clickRateNum > 10) {
       insights.push({ 
         type: "warning", 
-        message: "Alerte : Taux de clics supérieur à la moyenne (12.4%). Renforcez la formation sur le Spear Phishing." 
+        message: `Alerte : Taux de clics élevé (${maliciousClickRate}). Une formation de sensibilisation est recommandée.` 
       });
     } else {
        insights.push({ 
         type: "success", 
-        message: "Tendance positive : La vigilance des utilisateurs a augmenté de 15% ce mois-ci." 
+        message: "Tendance positive : La vigilance des utilisateurs est en amélioration." 
       });
     }
 

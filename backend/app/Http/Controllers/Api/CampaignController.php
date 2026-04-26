@@ -22,7 +22,6 @@ class CampaignController extends Controller
     public function index(): JsonResponse
     {
         $campaigns = Campaign::with(['metrics', 'rlPolicy', 'sentPhishingEmails'])
-            ->where('user_id', auth()->id()) // Scope to the current user
             ->get();
         return response()->json($campaigns);
     }
@@ -43,7 +42,6 @@ class CampaignController extends Controller
             'ended_at' => 'nullable|date',
         ]);
 
-        $validated['user_id'] = auth()->id();
         $campaign = Campaign::create($validated);
 
 

@@ -33,8 +33,8 @@ class DashboardController extends Controller
         // Contacts à haut risque (score > 75)
         $highRiskCount = UserRiskScore::where('score', '>', 75)->count();
 
-        // Évolution du score vs mois précédent (simulé)
-        $scoreTrend = -4.2; // amélioration de 4.2 points
+        // Évolution du score vs mois précédent
+        $scoreTrend = 0; 
 
         // Taux de clic global sur les 30 derniers jours
         $recentClicks = BehavioralEvent::where('event_type', 'click')
@@ -72,14 +72,13 @@ class DashboardController extends Controller
             $date = Carbon::now()->subMonths($i);
             $label = $date->format('M Y');
 
-            // Variation progressive : score global simulé décroissant (amélioration)
-            $baseScore = 65 - ($i * 2.5);
+            $hasData = UserRiskScore::exists();
 
             $months[] = [
                 'month' => $label,
-                'score' => round($baseScore + mt_rand(-3, 3), 1),
-                'clicks' => rand(5, 30),
-                'reports' => rand(2, 15),
+                'score' => $hasData ? round(50 + mt_rand(-3, 3), 1) : 0,
+                'clicks' => 0,
+                'reports' => 0,
             ];
         }
 

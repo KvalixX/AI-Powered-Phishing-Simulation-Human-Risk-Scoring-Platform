@@ -181,6 +181,7 @@ class PhishingService
 
             // Log event for analytics
             BehavioralEvent::create([
+                'user_id' => $sentEmail->user_id,
                 'contact_id' => $sentEmail->contact_id,
                 'campaign_id' => $sentEmail->campaign_id,
                 'event_type' => 'click',
@@ -190,6 +191,7 @@ class PhishingService
             ]);
 
             EmailClick::create([
+                 'user_id' => $sentEmail->user_id,
                  'contact_id' => $sentEmail->contact_id,
                  'campaign_id' => $sentEmail->campaign_id,
                  'ip_address' => $ip,
@@ -197,7 +199,7 @@ class PhishingService
             ]);
 
             // Update user risk score (vulnerability increase)
-            $this->updateUserRiskScore($sentEmail->contact_id, 'click');
+            $this->updateUserRiskScore($sentEmail->contact_id, 'click', $sentEmail->user_id);
 
             // Update RL Reward if enabled
             if ($sentEmail->campaign->rl_enabled) {
@@ -228,6 +230,7 @@ class PhishingService
             ]);
 
             BehavioralEvent::create([
+                'user_id' => $sentEmail->user_id,
                 'contact_id' => $sentEmail->contact_id,
                 'campaign_id' => $sentEmail->campaign_id,
                 'event_type' => 'report',
@@ -235,7 +238,7 @@ class PhishingService
             ]);
 
             // Update user risk score (vulnerability decrease / resilience increase)
-            $this->updateUserRiskScore($sentEmail->contact_id, 'report');
+            $this->updateUserRiskScore($sentEmail->contact_id, 'report', $sentEmail->user_id);
 
             // Update RL Reward if enabled
             if ($sentEmail->campaign->rl_enabled) {
@@ -389,6 +392,7 @@ Exemple de format attendu :
 
         if ($module) {
             $training = Training::create([
+                'user_id' => $sentEmail->user_id,
                 'contact_id' => $sentEmail->contact_id,
                 'training_module_id' => $module->id,
                 'status' => 'assigned',
@@ -528,9 +532,12 @@ UTILISE UN TON PROFESSIONNEL, BIENVEILLANT ET PÉDAGOGIQUE. NE PAS ÊTRE BLÂMAN
         return $safeSender;
     }
 
-    private function updateUserRiskScore(int $contactId, string $action)
+    private function updateUserRiskScore(int $contactId, string $action, int $userId = null)
     {
-        $scoreEntry = UserRiskScore::firstOrCreate(['contact_id' => $contactId], ['score' => 50, 'level' => 'moyen']);
+        $scoreEntry = UserRiskScore::firstOrCreate(
+            ['contact_id' => $contactId], 
+            ['user_id' => $userId, 'score' => 50, 'level' => 'moyen']
+        );
         
         $newScore = $scoreEntry->score;
         if ($action === 'click') {

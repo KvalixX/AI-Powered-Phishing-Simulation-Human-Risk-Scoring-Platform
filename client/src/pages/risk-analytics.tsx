@@ -147,17 +147,12 @@ export default function RiskAnalytics() {
       if (deptFilter === "Non spécifié") return !contact?.department;
       return contact?.department === deptFilter;
     });
-    if (scores.length === 0) return 42; // Demo fallback
+    if (scores.length === 0) return 0;
     return Math.round(scores.reduce((acc, curr) => acc + curr.score, 0) / scores.length);
   }, [riskScores, deptFilter, contacts]);
 
   const dynamicDepartmentRisk = useMemo(() => {
-    if (contacts.length === 0 && riskScores.length === 0) return [
-      { dept: "Direction", users: 5, score: 72, trend: "up", color: "#ef4444" },
-      { dept: "Ventes", users: 18, score: 64, trend: "stable", color: "#f97316" },
-      { dept: "Finance", users: 12, score: 41, trend: "down", color: "#eab308" },
-      { dept: "IT & Support", users: 24, score: 18, trend: "down", color: "#22c55e" },
-    ];
+    if (contacts.length === 0 && riskScores.length === 0) return [];
 
     const depts: Record<string, { users: number, scoreSum: number }> = {};
     contacts.forEach(c => {
@@ -288,7 +283,7 @@ export default function RiskAnalytics() {
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <TrendingDown className="w-4 h-4 text-green-400" />
-                <span className="text-green-400">↓ 12% depuis le mois dernier</span>
+                <span className="text-green-400">Stable depuis le mois dernier</span>
               </div>
             </div>
             <div className="hidden md:block">

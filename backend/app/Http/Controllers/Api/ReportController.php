@@ -25,7 +25,6 @@ class ReportController extends Controller
             'file_path' => 'nullable|string',
         ]);
 
-        $validated['author_id'] = auth()->id() ?? 1;
         $report = Report::create($validated);
         return response()->json($report->load('author'), 201);
     }
