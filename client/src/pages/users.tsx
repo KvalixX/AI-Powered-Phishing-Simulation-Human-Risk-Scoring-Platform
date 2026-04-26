@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { 
   Users as UsersIcon, 
@@ -226,6 +226,7 @@ export default function Users() {
         id: c.id,
         name: `${c.first_name} ${c.last_name}`,
         email: c.email,
+        avatar: (c as any).avatar,
         department: c.department || 'Non spécifié',
         role: c.position || 'Général',
         riskScore: rs,
@@ -558,6 +559,7 @@ export default function Users() {
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10">
+                          <AvatarImage src={user.avatar} />
                           <AvatarFallback className="bg-stone-200 text-stone-700">
                             {user.name.split(" ").map(n => n[0]).join("")}
                           </AvatarFallback>

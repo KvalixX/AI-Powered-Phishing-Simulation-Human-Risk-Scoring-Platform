@@ -42,6 +42,7 @@ Route::prefix('v1')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('user', [AuthController::class, 'user']);
         Route::put('user', [AuthController::class, 'update']);
+        Route::delete('user', [AuthController::class, 'destroy']);
 
         // ─── CONTACTS ───────────────────────────────────────────────────────────
         Route::post('contacts/import', [ContactController::class, 'import']);

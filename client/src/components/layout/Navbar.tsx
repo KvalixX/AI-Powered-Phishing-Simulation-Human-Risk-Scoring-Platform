@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAppStore } from "@/store/useAppStore";
 import { useNavigate } from "react-router-dom";
 
@@ -36,6 +36,7 @@ export function Navbar() {
                     className="flex items-center gap-2 hover:bg-stone-50 rounded-md px-2 py-1 transition-colors"
                 >
                     <Avatar className="w-8 h-8">
+                        <AvatarImage src={currentUser?.avatar} />
                         <AvatarFallback className="bg-blue-600 text-white text-xs font-semibold">
                             {currentUser?.name?.split(" ").map((n) => n[0]).join("") ?? "U"}
                         </AvatarFallback>

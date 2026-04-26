@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -112,6 +112,7 @@ export default function Profile() {
       email: c.email,
       department: c.department || "Unknown",
       role: c.position || "Employee",
+      avatar: c.email === currentUser?.email ? currentUser?.avatar : (c as any).avatar,
       riskScore: rs,
       campaigns: uniqueCampaigns,
       clicks,
@@ -248,6 +249,7 @@ export default function Profile() {
         <div className="bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900 p-6">
           <div className="flex items-start gap-5">
             <Avatar className="w-16 h-16 ring-4 ring-white/20">
+              <AvatarImage src={dynamicUser.avatar} />
               <AvatarFallback className="bg-gradient-to-br from-red-500 to-orange-500 text-white text-xl font-bold">
                 {dynamicUser.name.split(" ").map((n: string) => n[0]).join("")}
               </AvatarFallback>
