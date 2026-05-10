@@ -78,26 +78,26 @@ export default function Profile() {
 
   const dynamicUser = useMemo(() => {
     if (contacts.length === 0) return {
-        id: 0,
-        name: "Chargement...",
-        email: "...",
-        department: "...",
-        role: "...",
-        riskScore: 0,
-        campaigns: 0,
-        clicks: 0,
-        reports: 0,
-        trainingsCompleted: 0,
-        trainingsAssigned: 0
+      id: 0,
+      name: "Chargement...",
+      email: "...",
+      department: "...",
+      role: "...",
+      riskScore: 0,
+      campaigns: 0,
+      clicks: 0,
+      reports: 0,
+      trainingsCompleted: 0,
+      trainingsAssigned: 0
     };
-    
+
     // Priority: 1. URL ID/State ID, 2. Current Authenticated User Email, 3. First contact in list
-    const c = contacts.find(c => c.id === stateId) || 
-              contacts.find(c => c.email === currentUser?.email) || 
-              contacts[0];
-    
+    const c = contacts.find(c => c.id === stateId) ||
+      contacts.find(c => c.email === currentUser?.email) ||
+      contacts[0];
+
     const rs = riskScores.find(r => r.contact_id === c.id)?.score || 50;
-    
+
     const events = behavioralEvents.filter(e => e.contact_id === c.id);
     const uniqueCampaigns = new Set(events.map(e => e.campaign_id)).size;
     const clicks = events.filter(e => e.event_type === 'click').length;
@@ -145,32 +145,32 @@ export default function Profile() {
   const dynamicCampaignHistory = useMemo(() => {
     if (behavioralEvents.length === 0 || campaigns.length === 0) return [];
     const events = behavioralEvents.filter(e => e.contact_id === dynamicUser.id);
-    
+
     // Group events by campaign to see outcome
     const historyMap = new Map();
     events.forEach(e => {
-        const c = campaigns.find(camp => camp.id === e.campaign_id);
-        if (!c) return;
-        const name = c.name;
-        if (!historyMap.has(c.id)) {
-            historyMap.set(c.id, {
-                id: c.id,
-                name: c.name,
-                date: new Date(e.event_timestamp || Date.now()).toISOString().split('T')[0],
-                clickedLink: false,
-                reported: false,
-                result: "ignored"
-            });
-        }
-        const entry = historyMap.get(c.id);
-        if (e.event_type === 'click' || e.event_type === 'submission') {
-            entry.clickedLink = true;
-            entry.result = "clicked";
-        }
-        if (e.event_type === 'report') {
-            entry.reported = true;
-            entry.result = entry.clickedLink ? "clicked" : "reported";
-        }
+      const c = campaigns.find(camp => camp.id === e.campaign_id);
+      if (!c) return;
+      const name = c.name;
+      if (!historyMap.has(c.id)) {
+        historyMap.set(c.id, {
+          id: c.id,
+          name: c.name,
+          date: new Date(e.event_timestamp || Date.now()).toISOString().split('T')[0],
+          clickedLink: false,
+          reported: false,
+          result: "ignored"
+        });
+      }
+      const entry = historyMap.get(c.id);
+      if (e.event_type === 'click' || e.event_type === 'submission') {
+        entry.clickedLink = true;
+        entry.result = "clicked";
+      }
+      if (e.event_type === 'report') {
+        entry.reported = true;
+        entry.result = entry.clickedLink ? "clicked" : "reported";
+      }
     });
 
     const results = Array.from(historyMap.values());
@@ -178,34 +178,34 @@ export default function Profile() {
   }, [behavioralEvents, campaigns, dynamicUser.id]);
 
   const dynamicTrainingProgress = useMemo(() => {
-      const userTrainings = trainings.filter(t => t.contact_id === dynamicUser.id);
-      if (userTrainings.length === 0) return [];
-      return userTrainings.map(t => ({
-          name: t.ai_content ? "Module IA" : (t.content || "Formation"),
-          progress: t.status === 'completed' ? 100 : 0,
-          status: t.status === 'completed' ? "completed" : "not_started"
-      }));
+    const userTrainings = trainings.filter(t => t.contact_id === dynamicUser.id);
+    if (userTrainings.length === 0) return [];
+    return userTrainings.map(t => ({
+      name: t.ai_content ? "Module IA" : (t.content || "Formation"),
+      progress: t.status === 'completed' ? 100 : 0,
+      status: t.status === 'completed' ? "completed" : "not_started"
+    }));
   }, [trainings, dynamicUser.id]);
 
   const dynamicBehaviorTimeline = useMemo(() => {
-      const events = behavioralEvents.filter(e => e.contact_id === dynamicUser.id).map(e => {
-          const c = campaigns.find(camp => camp.id === e.campaign_id);
-          return {
-              date: new Date(e.event_timestamp || Date.now()).toISOString().split('T')[0],
-              action: e.event_type,
-              campaign: c ? c.name : "Unknown",
-              icon: e.event_type === 'click' ? MousePointer : e.event_type === 'report' ? CheckCircle2 : Shield,
-              color: e.event_type === 'click' ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
-          };
-      });
-      const trainingEvents = trainings.filter(t => t.contact_id === dynamicUser.id).map(t => ({
-          date: new Date(t.updated_at || Date.now()).toISOString().split('T')[0],
-          action: t.status === 'completed' ? "training_completed" : "training_started",
-          campaign: t.ai_content ? "Module IA" : (t.content || "Formation"),
-          icon: GraduationCap,
-          color: "text-blue-600 bg-blue-50"
-      }));
-      return [...events, ...trainingEvents].sort((a,b) => b.date.localeCompare(a.date));
+    const events = behavioralEvents.filter(e => e.contact_id === dynamicUser.id).map(e => {
+      const c = campaigns.find(camp => camp.id === e.campaign_id);
+      return {
+        date: new Date(e.event_timestamp || Date.now()).toISOString().split('T')[0],
+        action: e.event_type,
+        campaign: c ? c.name : "Unknown",
+        icon: e.event_type === 'click' ? MousePointer : e.event_type === 'report' ? CheckCircle2 : Shield,
+        color: e.event_type === 'click' ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
+      };
+    });
+    const trainingEvents = trainings.filter(t => t.contact_id === dynamicUser.id).map(t => ({
+      date: new Date(t.updated_at || Date.now()).toISOString().split('T')[0],
+      action: t.status === 'completed' ? "training_completed" : "training_started",
+      campaign: t.ai_content ? "Module IA" : (t.content || "Formation"),
+      icon: GraduationCap,
+      color: "text-blue-600 bg-blue-50"
+    }));
+    return [...events, ...trainingEvents].sort((a, b) => b.date.localeCompare(a.date));
   }, [behavioralEvents, trainings, campaigns, dynamicUser.id]);
 
   return (
@@ -223,8 +223,8 @@ export default function Profile() {
         </Button>
 
         <div className="flex items-center gap-2 w-64">
-          <Select 
-            value={dynamicUser.id.toString()} 
+          <Select
+            value={dynamicUser.id.toString()}
             onValueChange={(val) => navigate(`/profile/${val}`)}
           >
             <SelectTrigger className="bg-white/5 border-stone-200 dark:border-stone-700 h-9">

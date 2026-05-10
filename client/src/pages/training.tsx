@@ -25,8 +25,19 @@ import {
   Smartphone,
   Download,
   Printer,
-  Eye
+  Eye,
+  Search
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,6 +78,9 @@ export default function Training() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null);
   const [viewingTraining, setViewingTraining] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: trainings = [] } = useTrainings();
   const { data: contacts = [] } = useContacts();
@@ -109,7 +123,7 @@ export default function Training() {
     }
   };
 
-  const dynamicAssignedTrainings = useMemo(() => {
+  const filteredTrainings = useMemo(() => {
     if (trainings.length === 0) return [];
     return trainings.map(t => {
       const c = contacts.find(contact => contact.id === t.contact_id);
@@ -130,8 +144,20 @@ export default function Training() {
         /** Pixel d’ouverture ou clic sur « J’ai compris » (API track/training). */
         recipientHasOpenedMail: Boolean(t.email_opened_at) || t.status === 'completed',
       };
-    }).sort((a,b) => (a.status === 'completed' ? 1 : -1)).slice(0, 10);
-  }, [trainings, contacts]);
+    })
+    .filter(t => 
+      t.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.module.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a,b) => (a.status === 'completed' ? 1 : -1));
+  }, [trainings, contacts, searchTerm]);
+
+  const totalPages = Math.ceil(filteredTrainings.length / itemsPerPage);
+  const dynamicAssignedTrainings = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredTrainings.slice(start, start + itemsPerPage);
+  }, [filteredTrainings, currentPage]);
 
   const dynamicLearningStats = useMemo(() => {
     const totalTrainings = trainings.length;
@@ -228,10 +254,24 @@ export default function Training() {
         <div className="space-y-6">
           <Card className="border-stone-200">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Mail className="w-5 h-5 text-blue-600" />
-                Dernières Formations Envoyées par Email
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-blue-600" />
+                  <CardTitle className="text-lg">Dernières Formations Envoyées par Email</CardTitle>
+                </div>
+                <div className="relative w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-stone-400" />
+                  <Input
+                    placeholder="Rechercher..."
+                    className="pl-9 h-9"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -319,6 +359,70 @@ export default function Training() {
                   </tbody>
                 </table>
               </div>
+
+              {totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 1) setCurrentPage(currentPage - 1);
+                          }}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                        // Logic to show only a subset of pages if there are many
+                        if (
+                          totalPages > 7 &&
+                          page !== 1 &&
+                          page !== totalPages &&
+                          Math.abs(page - currentPage) > 1
+                        ) {
+                          if (Math.abs(page - currentPage) === 2) {
+                            return (
+                              <PaginationItem key={page}>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            );
+                          }
+                          return null;
+                        }
+
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              isActive={currentPage === page}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentPage(page);
+                              }}
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+
+                      <PaginationItem>
+                        <PaginationNext 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                          }}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
