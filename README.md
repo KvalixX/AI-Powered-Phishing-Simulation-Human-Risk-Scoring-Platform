@@ -42,9 +42,6 @@ cd backend
 composer install
 copy .env.example .env
 ```
-**Important**: Open `.env` and configure:
-- `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
-- `OPENAI_API_KEY` (Your OpenAI key)
 
 Then run:
 ```bash

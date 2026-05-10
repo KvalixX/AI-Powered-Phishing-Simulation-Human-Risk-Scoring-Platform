@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Info, 
-  CheckCircle, 
-  AlertTriangle, 
-  XCircle, 
-  UserPlus 
+import {
+  Info,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  UserPlus
 } from "lucide-react";
 import { notificationsData } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -52,12 +52,12 @@ export default function Notifications() {
               </Button>
             </div>
           </CardHeader>
-          
+
           <CardContent className="p-0">
             <div className="divide-y divide-stone-200">
               {notificationsData.map((notification) => {
                 const Icon = iconMap[notification.type];
-                
+
                 return (
                   <div key={notification.id} className="p-6 hover:bg-stone-50 transition-colors duration-200">
                     <div className="flex">
@@ -99,7 +99,7 @@ export default function Notifications() {
                   <p className="text-sm font-normal text-stone-900">Email notifications</p>
                   <p className="text-sm text-stone-500">Receive notifications via email</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notificationSettings.emailNotifications}
                   onCheckedChange={() => handleSettingChange('emailNotifications')}
                 />
@@ -110,7 +110,7 @@ export default function Notifications() {
                   <p className="text-sm font-normal text-stone-900">Push notifications</p>
                   <p className="text-sm text-stone-500">Receive push notifications in browser</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notificationSettings.pushNotifications}
                   onCheckedChange={() => handleSettingChange('pushNotifications')}
                 />
@@ -121,7 +121,7 @@ export default function Notifications() {
                   <p className="text-sm font-normal text-stone-900">SMS notifications</p>
                   <p className="text-sm text-stone-500">Receive important updates via SMS</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notificationSettings.smsNotifications}
                   onCheckedChange={() => handleSettingChange('smsNotifications')}
                 />

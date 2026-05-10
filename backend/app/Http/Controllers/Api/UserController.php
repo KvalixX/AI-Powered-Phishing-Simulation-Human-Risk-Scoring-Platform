@@ -176,7 +176,11 @@ class UserController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name'  => 'required|string|max:100',
-            'email'      => 'required|email|unique:contacts,email',
+            'email'      => [
+                'required',
+                'email',
+                \Illuminate\Validation\Rule::unique('contacts')->where(fn ($q) => $q->where('user_id', auth()->id()))
+            ],
             'department' => 'nullable|string|max:100',
             'position'   => 'nullable|string|max:100',
             'language'   => 'nullable|string|max:10',
@@ -208,7 +212,11 @@ class UserController extends Controller
         $validated = $request->validate([
             'first_name' => 'sometimes|string|max:100',
             'last_name'  => 'sometimes|string|max:100',
-            'email'      => 'sometimes|email|unique:contacts,email,' . $id,
+            'email'      => [
+                'sometimes',
+                'email',
+                \Illuminate\Validation\Rule::unique('contacts')->ignore($id)->where(fn ($q) => $q->where('user_id', auth()->id()))
+            ],
             'department' => 'nullable|string|max:100',
             'position'   => 'nullable|string|max:100',
             'language'   => 'nullable|string|max:10',

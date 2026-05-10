@@ -22,7 +22,6 @@ class CampaignController extends Controller
     public function index(): JsonResponse
     {
         $campaigns = Campaign::with(['metrics', 'rlPolicy', 'sentPhishingEmails'])
-            ->where('user_id', auth()->id() ?? 1) // Scope to the current user
             ->get();
         return response()->json($campaigns);
     }
@@ -32,7 +31,7 @@ class CampaignController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'nullable|in:draft,active,completed',
+            'status' => 'nullable|in:draft,active,completed,scheduled',
             'difficulty_level' => 'nullable|in:facile,moyen,difficile,expert',
             'adaptation_params' => 'nullable|array',
             'rl_enabled' => 'nullable|boolean',
@@ -43,7 +42,6 @@ class CampaignController extends Controller
             'ended_at' => 'nullable|date',
         ]);
 
-        $validated['user_id'] = auth()->id() ?? 1;
         $campaign = Campaign::create($validated);
 
 
@@ -54,6 +52,9 @@ class CampaignController extends Controller
             'precision' => 0,
             'auc_roc' => 0,
         ]);
+
+        // Pre-generate emails for preview
+        app(\App\Services\PhishingService::class)->generateEmailsForCampaign($campaign);
 
         if ($campaign->rl_enabled) {
             RLPolicy::create([
@@ -66,7 +67,10 @@ class CampaignController extends Controller
 
         // Auto-launch if status is active
         if ($campaign->status === 'active') {
-            $this->phishingService->launchCampaign($campaign);
+            $this->phishingService->generateEmailsForCampaign($campaign);
+            $this->phishingService->sendCampaignEmails($campaign);
+        } else {
+            $this->phishingService->generateEmailsForCampaign($campaign);
         }
 
         return response()->json($campaign->load(['metrics', 'rlPolicy']), 201);
@@ -82,7 +86,7 @@ class CampaignController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'nullable|in:draft,active,completed,paused',
+            'status' => 'nullable|in:draft,active,completed,paused,scheduled',
             'difficulty_level' => 'nullable|in:facile,moyen,difficile,expert',
             'adaptation_params' => 'nullable|array',
             'rl_enabled' => 'nullable|boolean',
@@ -94,7 +98,9 @@ class CampaignController extends Controller
         $campaign->update($validated);
 
         if (isset($validated['status']) && $validated['status'] === 'active' && $campaign->started_at === null) {
-            $this->phishingService->launchCampaign($campaign);
+            $this->phishingService->sendCampaignEmails($campaign);
+        } elseif ($campaign->status === 'draft') {
+            $this->phishingService->generateEmailsForCampaign($campaign);
         }
 
         return response()->json($campaign->fresh()->load('metrics'));
@@ -102,7 +108,7 @@ class CampaignController extends Controller
 
     public function launch(Campaign $campaign): JsonResponse
     {
-        $this->phishingService->launchCampaign($campaign);
+        $this->phishingService->sendCampaignEmails($campaign);
         return response()->json(['message' => 'Campagne lancée avec succès', 'campaign' => $campaign->fresh()]);
     }
 

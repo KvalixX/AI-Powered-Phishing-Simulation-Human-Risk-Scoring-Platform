@@ -67,15 +67,25 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+            'avatar' => 'sometimes|nullable|string', // Could be base64 or URL
             'organization' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
             'position' => 'nullable|string|max:255',
             'seniority' => 'nullable|string|max:255',
             'language' => 'nullable|string|max:10',
+            'current_password' => 'required_with:password|nullable|string',
             'password' => 'sometimes|nullable|string|min:8|confirmed',
         ]);
 
-        $data = $request->except(['password', 'password_confirmation']);
+        if ($request->filled('password')) {
+            if (!Hash::check($request->current_password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'current_password' => ['Le mot de passe actuel est incorrect.'],
+                ]);
+            }
+        }
+
+        $data = $request->except(['password', 'password_confirmation', 'current_password']);
         
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
@@ -86,6 +96,21 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Profil mis à jour.',
             'user' => $user->fresh(),
+        ]);
+    }
+
+    public function destroy(Request $request)
+    {
+        $user = $request->user();
+        
+        // Revoke all tokens
+        $user->tokens()->delete();
+        
+        // Delete user
+        $user->delete();
+
+        return response()->json([
+            'message' => 'Compte supprimé avec succès.'
         ]);
     }
 

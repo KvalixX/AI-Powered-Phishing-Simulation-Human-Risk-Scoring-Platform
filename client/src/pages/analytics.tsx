@@ -88,6 +88,28 @@ export default function Analytics() {
     const [deptFilter, setDeptFilter] = useState("all");
     const [periodFilter, setPeriodFilter] = useState("6months");
 
+    const uniqueDepartments = useMemo(() => {
+        const depts = new Set<string>();
+        contacts.forEach(c => {
+            if (c.department) depts.add(c.department);
+        });
+        return Array.from(depts).sort();
+    }, [contacts]);
+
+    const isWithinPeriod = (dateStr: string | null | undefined) => {
+        if (!dateStr) return false;
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+        if (periodFilter === "30days") return diffDays <= 30;
+        if (periodFilter === "90days") return diffDays <= 90;
+        if (periodFilter === "6months") return diffDays <= 180;
+        if (periodFilter === "1year") return diffDays <= 365;
+        return true;
+    };
+
     const filteredContacts = useMemo(() => {
         if (deptFilter === "all") return contacts;
         return contacts.filter(c => c.department === deptFilter);
@@ -97,7 +119,7 @@ export default function Analytics() {
         if (riskScores.length === 0) return [];
         let low = 0, medium = 0, high = 0, critical = 0;
         
-        // Filter risk scores by department if necessary
+        // Filter risk scores by department
         const targetScores = deptFilter === "all" ? riskScores : riskScores.filter(rs => 
             contacts.find(c => c.id === rs.contact_id)?.department === deptFilter
         );
@@ -118,9 +140,11 @@ export default function Analytics() {
     }, [riskScores, deptFilter, contacts]);
 
     const dynamicCampaignPerformance = useMemo(() => {
-        if (campaigns.length === 0) return [];
-        return campaigns.map(c => {
-            const events = behavioralEvents.filter(e => e.campaign_id === c.id);
+        const filteredCampaigns = campaigns.filter(c => isWithinPeriod(c.started_at));
+        if (filteredCampaigns.length === 0) return [];
+
+        return filteredCampaigns.map(c => {
+            const events = behavioralEvents.filter(e => e.campaign_id === c.id && isWithinPeriod(e.event_timestamp));
             // Filter events by department if selected
             const targetEvents = deptFilter === "all" ? events : events.filter(e => 
                 contacts.find(ct => ct.id === e.contact_id)?.department === deptFilter
@@ -128,7 +152,7 @@ export default function Analytics() {
 
             const clicks = targetEvents.filter(e => e.event_type === 'click').length;
             const reports = targetEvents.filter(e => e.event_type === 'report').length;
-            const sent = deptFilter === "all" ? Math.max(contacts.length, events.length) : filteredContacts.length;
+            const sent = deptFilter === "all" ? Math.max(contacts.length, targetEvents.length) : filteredContacts.length;
 
             return {
                 name: c.name.substring(0, 15),
@@ -137,7 +161,7 @@ export default function Analytics() {
                 reports
             };
         });
-    }, [campaigns, behavioralEvents, contacts, deptFilter, filteredContacts]);
+    }, [campaigns, behavioralEvents, contacts, deptFilter, filteredContacts, periodFilter]);
 
     const dynamicClickRateOverTime = useMemo(() => {
         return dynamicCampaignPerformance.map(cp => ({
@@ -168,17 +192,19 @@ export default function Analytics() {
     }, [contacts, riskScores]);
 
     const dynamicTrainingEffectiveness = useMemo(() => {
-        if (trainings.length === 0) return [
+        const filteredTrainings = trainings.filter(t => isWithinPeriod(t.updated_at || t.created_at));
+        
+        if (filteredTrainings.length === 0) return [
             { group: "Finance", before: 75, after: 42 },
             { group: "IT", before: 45, after: 12 },
             { group: "Direct", before: 88, after: 55 },
             { group: "Sales", before: 65, after: 38 },
         ];
         
-        const depts = deptFilter === "all" ? Array.from(new Set(contacts.map(c => c.department || "Other"))) : [deptFilter];
+        const depts = deptFilter === "all" ? uniqueDepartments : [deptFilter];
         return depts.slice(0, 4).map(d => {
             const deptUsers = contacts.filter(c => c.department === d);
-            const trained = deptUsers.filter(u => trainings.some(t => t.contact_id === u.id));
+            const trained = deptUsers.filter(u => filteredTrainings.some(t => t.contact_id === u.id));
             const avgBefore = 65 + Math.random() * 20;
             const avgAfter = avgBefore * (1 - (trained.length / Math.max(1, deptUsers.length)) * 0.4);
             return {
@@ -187,7 +213,7 @@ export default function Analytics() {
                 after: Math.round(avgAfter)
             };
         });
-    }, [trainings, contacts, deptFilter]);
+    }, [trainings, contacts, deptFilter, uniqueDepartments, periodFilter]);
 
     const dynamicRadarData = useMemo(() => {
         // Attack Vector Analysis (Radar chart)
@@ -216,9 +242,10 @@ export default function Analytics() {
     }, []);
 
     const summaryMetrics = useMemo(() => {
-        const events = deptFilter === "all" ? behavioralEvents : behavioralEvents.filter(e => 
+        const events = (deptFilter === "all" ? behavioralEvents : behavioralEvents.filter(e => 
             contacts.find(c => c.id === e.contact_id)?.department === deptFilter
-        );
+        )).filter(e => isWithinPeriod(e.event_timestamp));
+
         const totalEvents = events.length;
         const totalClicks = events.filter(e => e.event_type === 'click').length;
         const totalReports = events.filter(e => e.event_type === 'report').length;
@@ -227,7 +254,8 @@ export default function Analytics() {
         const avgReportRate = totalEvents > 0 ? ((totalReports / totalEvents) * 100).toFixed(1) + "%" : "4.2%";
         
         const trainedUsers = new Set(trainings.filter(t => 
-            deptFilter === "all" || contacts.find(c => c.id === t.contact_id)?.department === deptFilter
+            (deptFilter === "all" || contacts.find(c => c.id === t.contact_id)?.department === deptFilter) &&
+            isWithinPeriod(t.updated_at || t.created_at)
         ).map(t => t.contact_id)).size;
         
         const trainingComp = filteredContacts.length > 0 ? Math.round((trainedUsers / filteredContacts.length) * 100) + "%" : "68%";
@@ -243,9 +271,9 @@ export default function Analytics() {
             { label: "Training Completion", value: trainingComp, icon: GraduationCap, color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-950", badge: "Live", badgeCls: "text-green-600" },
             { label: "Avg Risk Score", value: avgRisk, icon: Activity, color: "text-amber-600", bg: "bg-amber-100 dark:bg-amber-950", badge: "Live", badgeCls: "text-amber-600" },
         ];
-    }, [behavioralEvents, trainings, contacts, riskScores, deptFilter, filteredContacts]);
+    }, [behavioralEvents, trainings, contacts, riskScores, deptFilter, filteredContacts, periodFilter]);
     return (
-        <div className="h-full overflow-y-auto p-6 custom-scrollbar">
+        <div id="app-content" className="h-full overflow-y-auto p-6 custom-scrollbar">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
@@ -277,11 +305,9 @@ export default function Analytics() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Tous les Départements</SelectItem>
-                            <SelectItem value="it">IT & Technique</SelectItem>
-                            <SelectItem value="rh">Ressources Humaines</SelectItem>
-                            <SelectItem value="finance">Finance & Comptabilité</SelectItem>
-                            <SelectItem value="sales">Ventes & Commercial</SelectItem>
-                            <SelectItem value="marketing">Marketing</SelectItem>
+                            {uniqueDepartments.map(dept => (
+                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
 

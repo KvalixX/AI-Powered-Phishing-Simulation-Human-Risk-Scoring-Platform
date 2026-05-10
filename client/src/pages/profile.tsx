@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -78,33 +78,33 @@ export default function Profile() {
 
   const dynamicUser = useMemo(() => {
     if (contacts.length === 0) return {
-        id: 0,
-        name: "Chargement...",
-        email: "...",
-        department: "...",
-        role: "...",
-        riskScore: 0,
-        campaigns: 0,
-        clicks: 0,
-        reports: 0,
-        trainingsCompleted: 0,
-        trainingsAssigned: 0
+      id: 0,
+      name: "Chargement...",
+      email: "...",
+      department: "...",
+      role: "...",
+      riskScore: 0,
+      campaigns: 0,
+      clicks: 0,
+      reports: 0,
+      trainingsCompleted: 0,
+      trainingsAssigned: 0
     };
-    
+
     // Priority: 1. URL ID/State ID, 2. Current Authenticated User Email, 3. First contact in list
-    const c = contacts.find(c => c.id === stateId) || 
-              contacts.find(c => c.email === currentUser?.email) || 
-              contacts[0];
-    
+    const c = contacts.find(c => c.id === stateId) ||
+      contacts.find(c => c.email === currentUser?.email) ||
+      contacts[0];
+
     const rs = riskScores.find(r => r.contact_id === c.id)?.score || 50;
-    
+
     const events = behavioralEvents.filter(e => e.contact_id === c.id);
     const uniqueCampaigns = new Set(events.map(e => e.campaign_id)).size;
     const clicks = events.filter(e => e.event_type === 'click').length;
     const reports = events.filter(e => e.event_type === 'report').length;
 
     const userTrainings = trainings.filter(t => t.contact_id === c.id);
-    const completedTrainings = userTrainings.filter(t => t.completed).length;
+    const completedTrainings = userTrainings.filter(t => t.status === 'completed').length;
 
     return {
       id: c.id,
@@ -112,6 +112,7 @@ export default function Profile() {
       email: c.email,
       department: c.department || "Unknown",
       role: c.position || "Employee",
+      avatar: c.email === currentUser?.email ? currentUser?.avatar : (c as any).avatar,
       riskScore: rs,
       campaigns: uniqueCampaigns,
       clicks,
@@ -144,32 +145,32 @@ export default function Profile() {
   const dynamicCampaignHistory = useMemo(() => {
     if (behavioralEvents.length === 0 || campaigns.length === 0) return [];
     const events = behavioralEvents.filter(e => e.contact_id === dynamicUser.id);
-    
+
     // Group events by campaign to see outcome
     const historyMap = new Map();
     events.forEach(e => {
-        const c = campaigns.find(camp => camp.id === e.campaign_id);
-        if (!c) return;
-        const name = c.name;
-        if (!historyMap.has(c.id)) {
-            historyMap.set(c.id, {
-                id: c.id,
-                name: c.name,
-                date: new Date(e.event_timestamp || Date.now()).toISOString().split('T')[0],
-                clickedLink: false,
-                reported: false,
-                result: "ignored"
-            });
-        }
-        const entry = historyMap.get(c.id);
-        if (e.event_type === 'click' || e.event_type === 'submission') {
-            entry.clickedLink = true;
-            entry.result = "clicked";
-        }
-        if (e.event_type === 'report') {
-            entry.reported = true;
-            entry.result = entry.clickedLink ? "clicked" : "reported";
-        }
+      const c = campaigns.find(camp => camp.id === e.campaign_id);
+      if (!c) return;
+      const name = c.name;
+      if (!historyMap.has(c.id)) {
+        historyMap.set(c.id, {
+          id: c.id,
+          name: c.name,
+          date: new Date(e.event_timestamp || Date.now()).toISOString().split('T')[0],
+          clickedLink: false,
+          reported: false,
+          result: "ignored"
+        });
+      }
+      const entry = historyMap.get(c.id);
+      if (e.event_type === 'click' || e.event_type === 'submission') {
+        entry.clickedLink = true;
+        entry.result = "clicked";
+      }
+      if (e.event_type === 'report') {
+        entry.reported = true;
+        entry.result = entry.clickedLink ? "clicked" : "reported";
+      }
     });
 
     const results = Array.from(historyMap.values());
@@ -177,34 +178,34 @@ export default function Profile() {
   }, [behavioralEvents, campaigns, dynamicUser.id]);
 
   const dynamicTrainingProgress = useMemo(() => {
-      const userTrainings = trainings.filter(t => t.contact_id === dynamicUser.id);
-      if (userTrainings.length === 0) return [];
-      return userTrainings.map(t => ({
-          name: t.content,
-          progress: t.completed ? 100 : 0,
-          status: t.completed ? "completed" : "not_started"
-      }));
+    const userTrainings = trainings.filter(t => t.contact_id === dynamicUser.id);
+    if (userTrainings.length === 0) return [];
+    return userTrainings.map(t => ({
+      name: t.ai_content ? "Module IA" : (t.content || "Formation"),
+      progress: t.status === 'completed' ? 100 : 0,
+      status: t.status === 'completed' ? "completed" : "not_started"
+    }));
   }, [trainings, dynamicUser.id]);
 
   const dynamicBehaviorTimeline = useMemo(() => {
-      const events = behavioralEvents.filter(e => e.contact_id === dynamicUser.id).map(e => {
-          const c = campaigns.find(camp => camp.id === e.campaign_id);
-          return {
-              date: new Date(e.event_timestamp || Date.now()).toISOString().split('T')[0],
-              action: e.event_type,
-              campaign: c ? c.name : "Unknown",
-              icon: e.event_type === 'click' ? MousePointer : e.event_type === 'report' ? CheckCircle2 : Shield,
-              color: e.event_type === 'click' ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
-          };
-      });
-      const trainingEvents = trainings.filter(t => t.contact_id === dynamicUser.id).map(t => ({
-          date: new Date(t.updated_at || Date.now()).toISOString().split('T')[0],
-          action: t.completed ? "training_completed" : "training_started",
-          campaign: t.content,
-          icon: GraduationCap,
-          color: "text-blue-600 bg-blue-50"
-      }));
-      return [...events, ...trainingEvents].sort((a,b) => b.date.localeCompare(a.date));
+    const events = behavioralEvents.filter(e => e.contact_id === dynamicUser.id).map(e => {
+      const c = campaigns.find(camp => camp.id === e.campaign_id);
+      return {
+        date: new Date(e.event_timestamp || Date.now()).toISOString().split('T')[0],
+        action: e.event_type,
+        campaign: c ? c.name : "Unknown",
+        icon: e.event_type === 'click' ? MousePointer : e.event_type === 'report' ? CheckCircle2 : Shield,
+        color: e.event_type === 'click' ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
+      };
+    });
+    const trainingEvents = trainings.filter(t => t.contact_id === dynamicUser.id).map(t => ({
+      date: new Date(t.updated_at || Date.now()).toISOString().split('T')[0],
+      action: t.status === 'completed' ? "training_completed" : "training_started",
+      campaign: t.ai_content ? "Module IA" : (t.content || "Formation"),
+      icon: GraduationCap,
+      color: "text-blue-600 bg-blue-50"
+    }));
+    return [...events, ...trainingEvents].sort((a, b) => b.date.localeCompare(a.date));
   }, [behavioralEvents, trainings, campaigns, dynamicUser.id]);
 
   return (
@@ -222,8 +223,8 @@ export default function Profile() {
         </Button>
 
         <div className="flex items-center gap-2 w-64">
-          <Select 
-            value={dynamicUser.id.toString()} 
+          <Select
+            value={dynamicUser.id.toString()}
             onValueChange={(val) => navigate(`/profile/${val}`)}
           >
             <SelectTrigger className="bg-white/5 border-stone-200 dark:border-stone-700 h-9">
@@ -248,6 +249,7 @@ export default function Profile() {
         <div className="bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900 p-6">
           <div className="flex items-start gap-5">
             <Avatar className="w-16 h-16 ring-4 ring-white/20">
+              <AvatarImage src={dynamicUser.avatar} />
               <AvatarFallback className="bg-gradient-to-br from-red-500 to-orange-500 text-white text-xl font-bold">
                 {dynamicUser.name.split(" ").map((n: string) => n[0]).join("")}
               </AvatarFallback>
@@ -269,29 +271,6 @@ export default function Profile() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="border-stone-600 text-stone-300 hover:bg-stone-700 hover:text-white"
-                    onClick={() => {
-                        toast({ title: "Préparation de la formation", description: `Assignation d'un module pour ${dynamicUser.name}...` });
-                        navigate('/training');
-                    }}
-                  >
-                    <GraduationCap className="w-4 h-4 mr-1.5" />
-                    Assign Training
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={() => {
-                        toast({ title: "Ajout à la campagne", description: `Profil de ${dynamicUser.name} ajouté à la sélection.` });
-                        navigate('/campaigns');
-                    }}
-                  >
-                    <Target className="w-4 h-4 mr-1.5" />
-                    Add to Campaign
-                  </Button>
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-4 mt-5">
@@ -377,35 +356,6 @@ export default function Profile() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-2 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 dark:border-purple-800/50 dark:bg-stone-900">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2 text-stone-900 dark:text-white">
-                  <Brain className="w-4 h-4 text-purple-600" />
-                  AI Risk Assessment
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    { icon: AlertTriangle, color: "text-red-500", title: "Primary Risk", desc: "High susceptibility to urgency and social engineering. Clicked 5/8 campaigns in 6 months.", badge: "Urgency Attacks", badgeCls: "bg-red-100 text-red-700" },
-                    { icon: ZapIcon, color: "text-amber-500", title: "Recommendation", desc: "Assign 'Advanced Social Engineering' training immediately. Follow with a CEO fraud test.", badge: "Action Required", badgeCls: "bg-amber-100 text-amber-700" },
-                    { icon: CheckCircle2, color: "text-green-500", title: "Strengths", desc: "Reported the Zoom Update campaign. Shows awareness of malware distribution tactics.", badge: "Good Reporting", badgeCls: "bg-green-100 text-green-700" },
-                  ].map((item, i) => {
-                    const Icon = item.icon;
-                    return (
-                      <div key={i} className="p-4 bg-white dark:bg-stone-800 rounded-xl border border-purple-100 dark:border-stone-700">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Icon className={`w-4 h-4 ${item.color}`} />
-                          <p className="text-sm font-semibold text-stone-900 dark:text-white">{item.title}</p>
-                        </div>
-                        <p className="text-xs text-stone-600 dark:text-stone-400">{item.desc}</p>
-                        <Badge className={`mt-2 ${item.badgeCls}`}>{item.badge}</Badge>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </TabsContent>
 

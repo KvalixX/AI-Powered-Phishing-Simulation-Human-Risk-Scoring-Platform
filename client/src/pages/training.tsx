@@ -24,8 +24,20 @@ import {
   Lock,
   Smartphone,
   Download,
-  Printer
+  Printer,
+  Eye,
+  Search
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,80 +56,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTrainings, useCreateTraining, useDeleteTraining, useContacts, useRiskScores } from "@/hooks/useApi";
 import { useToast } from "@/hooks/use-toast";
 import { exportToExcel, exportToPDF } from "@/lib/utils";
 
-const trainingModules = [
-  { 
-    id: 1, 
-    title: "Identifier les emails de phishing", 
-    description: "Apprenez à reconnaître les signes d'un email de phishing",
-    category: "Email",
-    duration: "15 min",
-    difficulty: "Débutant",
-    completion: 78,
-    aiRecommended: true,
-    icon: Mail
-  },
-  { 
-    id: 2, 
-    title: "Ingénierie sociale avancée", 
-    description: "Comprendre les techniques de manipulation psychologique",
-    category: "Social Engineering",
-    duration: "25 min",
-    difficulty: "Avancé",
-    completion: 45,
-    aiRecommended: true,
-    icon: Brain
-  },
-  { 
-    id: 3, 
-    title: "Protection des credentials", 
-    description: "Sécurisez vos identifiants et mots de passe",
-    category: "Sécurité",
-    duration: "20 min",
-    difficulty: "Intermédiaire",
-    completion: 92,
-    aiRecommended: false,
-    icon: Lock
-  },
-  { 
-    id: 4, 
-    title: "Réponse aux incidents", 
-    description: "Que faire en cas de suspicion d'attaque",
-    category: "Incident",
-    duration: "10 min",
-    difficulty: "Débutant",
-    completion: 65,
-    aiRecommended: false,
-    icon: AlertTriangle
-  },
-  { 
-    id: 5, 
-    title: "Phishing sur mobile", 
-    description: "Menaces sur smartphones et tablettes",
-    category: "Mobile",
-    duration: "18 min",
-    difficulty: "Intermédiaire",
-    completion: 34,
-    aiRecommended: true,
-    icon: Smartphone
-  },
-  { 
-    id: 6, 
-    title: "Simulations interactives", 
-    description: "Testez vos connaissances en temps réel",
-    category: "Pratique",
-    duration: "30 min",
-    difficulty: "Avancé",
-    completion: 28,
-    aiRecommended: true,
-    icon: Target
-  },
-];
+// Static modules removed to focus on AI-driven email training
+const trainingModules: any[] = [];
 
 export default function Training() {
   const navigate = useNavigate();
@@ -125,6 +77,10 @@ export default function Training() {
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null);
+  const [viewingTraining, setViewingTraining] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: trainings = [] } = useTrainings();
   const { data: contacts = [] } = useContacts();
@@ -167,63 +123,96 @@ export default function Training() {
     }
   };
 
-  const dynamicAssignedTrainings = useMemo(() => {
+  const filteredTrainings = useMemo(() => {
     if (trainings.length === 0) return [];
     return trainings.map(t => {
       const c = contacts.find(contact => contact.id === t.contact_id);
+      const content = t.ai_content || t.content; // Compatibility with both fields
       return {
         id: t.id,
         user: c ? `${c.first_name} ${c.last_name}` : "Inconnu",
         email: c ? c.email : "N/A",
-        module: t.content,
+        module: "Sensibilisation Cyber (IA)",
         assigned: t.created_at ? new Date(t.created_at).toISOString().split('T')[0] : "N/A",
         due: t.created_at ? new Date(new Date(t.created_at).getTime() + 7*24*60*60*1000).toISOString().split('T')[0] : "N/A",
-        progress: t.completed ? 100 : 0,
-        status: t.completed ? "completed" : "not_started",
-        priority: t.completed ? "medium" : "high"
+        progress: t.status === 'completed' ? 100 : (content ? 50 : 0),
+        status: t.status || 'not_started',
+        priority: (t.status === 'completed') ? "low" : "high",
+        content: content,
+        isAiGenerated: content && content.includes('<h'),
+        email_opened_at: t.email_opened_at,
+        /** Pixel d’ouverture ou clic sur « J’ai compris » (API track/training). */
+        recipientHasOpenedMail: Boolean(t.email_opened_at) || t.status === 'completed',
       };
-    }).sort((a,b) => a.progress - b.progress).slice(0, 10);
-  }, [trainings, contacts]);
+    })
+    .filter(t => 
+      t.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.module.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a,b) => (a.status === 'completed' ? 1 : -1));
+  }, [trainings, contacts, searchTerm]);
+
+  const totalPages = Math.ceil(filteredTrainings.length / itemsPerPage);
+  const dynamicAssignedTrainings = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredTrainings.slice(start, start + itemsPerPage);
+  }, [filteredTrainings, currentPage]);
 
   const dynamicLearningStats = useMemo(() => {
     const totalTrainings = trainings.length;
-    const completed = trainings.filter(t => t.completed).length;
-    const completionRate = totalTrainings > 0 ? Math.round((completed / totalTrainings) * 100) : 0;
-    const certifiedUserIds = new Set(trainings.filter(t => t.completed).map(t => t.contact_id));
+    // Count as completed only if status is explicitly 'completed'
+    const completedCount = trainings.filter(t => t.status === 'completed').length;
+    const completionRate = totalTrainings > 0 ? Math.round((completedCount / totalTrainings) * 100) : 0;
+    // Users who have finished their training
+    const certifiedUserIds = new Set(trainings.filter(t => t.status === 'completed').map(t => t.contact_id));
 
     return [
-      { label: "Taux de complétion", value: completionRate, target: 80 },
-      { label: "Score moyen", value: 0, target: 8.0 },
-      { label: "Temps moyen", value: "0min", target: "15min" },
-      { label: "Certifiés", value: certifiedUserIds.size, target: contacts.length || 0 },
+      { label: "Taux de complétion", value: completionRate, displayValue: `${completionRate}%`, target: 80, targetDisplay: "80%" },
+      { label: "Délivrés (IA)", value: trainings.filter(t => t.ai_content || t.content).length, displayValue: trainings.filter(t => t.ai_content || t.content).length, target: totalTrainings, targetDisplay: totalTrainings },
+      { label: "En attente d’ouverture du mail", value: trainings.filter(t => t.status !== 'completed' && !t.email_opened_at).length, displayValue: trainings.filter(t => t.status !== 'completed' && !t.email_opened_at).length, target: totalTrainings, targetDisplay: totalTrainings },
     ];
   }, [trainings, contacts]);
 
-  const dynamicLeaderboard = useMemo(() => {
-    if (contacts.length === 0 || trainings.length === 0) return [];
-    
-    const userScores = contacts.map(c => {
-      const userTrainings = trainings.filter(t => t.contact_id === c.id);
-      const completedCount = userTrainings.filter(t => t.completed).length;
-      const rs = riskScores.find(r => r.contact_id === c.id)?.score || 50;
-      const score = Math.min(100, Math.max(0, 100 - rs + (completedCount * 10)));
-      return {
-        name: `${c.first_name} ${c.last_name}`,
-        department: c.department || "Général",
-        score,
-        completed: completedCount
-      };
-    });
-    
-    return userScores.sort((a,b) => b.score - a.score).slice(0, 5).map((u, i) => ({...u, rank: i+1}));
-  }, [contacts, trainings, riskScores]);
+
+
+  const trainingStatusBadge = (status: string, emailOpenedAt: string | null | undefined) => {
+    if (status === 'completed') {
+      return (
+        <Badge className="bg-green-100 text-green-700">
+          <CheckCircle2 className="w-3 h-3 mr-1" />
+          Mail consulté — terminé
+        </Badge>
+      );
+    }
+    if (emailOpenedAt || status === 'in_progress') {
+      return (
+        <Badge className="bg-blue-100 text-blue-800">
+          <Eye className="w-3 h-3 mr-1" />
+          Mail ouvert — à valider
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-stone-200 text-stone-700">
+        <Mail className="w-3 h-3 mr-1" />
+        Envoyé — non consulté
+      </Badge>
+    );
+  };
 
   return (
+    <TooltipProvider delayDuration={200}>
     <div className="h-full overflow-y-auto p-6 custom-scrollbar">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-stone-900">Formation & Sensibilisation</h1>
-          <p className="text-stone-500 mt-1">Modules de formation personnalisés et auto-adaptatifs</p>
+          <p className="text-stone-500 mt-1 flex items-center gap-2">
+            Modules de formation personnalisés envoyés par Gmail aux utilisateurs vulnérables
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <Mail className="w-3 h-3 mr-1" /> Automatisé
+            </Badge>
+          </p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => exportToPDF('app-content', 'formations_kira')}>
@@ -234,52 +223,11 @@ export default function Training() {
             <Download className="w-4 h-4 mr-2" />
             Excel
           </Button>
-          <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-          <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Assigner Formation
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-green-600" />
-                Assigner une Formation
-              </DialogTitle>
-              <DialogDescription>
-                Sélectionnez un module et assignez-le aux utilisateurs concernés
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 mt-4">
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Brain className="w-4 h-4 text-green-600" />
-                  <span className="font-medium text-green-900">Recommandation IA</span>
-                </div>
-                <p className="text-sm text-green-700">
-                  Basé sur leur profil de risque, les utilisateurs les plus vulnérables seront ciblés.
-                </p>
-              </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
-                  Annuler
-                </Button>
-                <Button 
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={handleAutoAssign}
-                  disabled={createTraining.isPending}
-                >
-                  Assigner automatiquement
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {dynamicLearningStats.map((stat, index) => (
           <Card key={index} className="border-stone-200">
             <CardContent className="p-6">
@@ -288,90 +236,42 @@ export default function Training() {
                 {index === 0 && <BookOpen className="w-4 h-4 text-blue-600" />}
                 {index === 1 && <Trophy className="w-4 h-4 text-yellow-600" />}
                 {index === 2 && <Clock className="w-4 h-4 text-stone-400" />}
-                {index === 3 && <CheckCircle2 className="w-4 h-4 text-green-600" />}
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-stone-900">{stat.value}</span>
-                <span className="text-sm text-stone-400">/ {stat.target}</span>
+                <span className="text-2xl font-bold text-stone-900">{stat.displayValue}</span>
+                <span className="text-sm text-stone-400">/ {stat.targetDisplay}</span>
               </div>
-              <Progress value={(typeof stat.value === 'number' ? stat.value : 68)} className="mt-3 h-2" />
+              <Progress 
+                value={Number(stat.target) > 0 ? (Number(stat.value) / Number(stat.target)) * 100 : 0} 
+                className="mt-3 h-2" 
+              />
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="space-y-6">
+        <div className="space-y-6">
           <Card className="border-stone-200">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-blue-600" />
-                  Modules de Formation
-                </CardTitle>
-                <div className="flex gap-2">
-                  <Badge variant="outline" className="cursor-pointer">Tous</Badge>
-                  <Badge variant="outline" className="cursor-pointer">Recommandés IA</Badge>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-blue-600" />
+                  <CardTitle className="text-lg">Dernières Formations Envoyées par Email</CardTitle>
+                </div>
+                <div className="relative w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-stone-400" />
+                  <Input
+                    placeholder="Rechercher..."
+                    className="pl-9 h-9"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {trainingModules.map((module) => (
-                  <Card key={module.id} className="border-stone-200 hover:border-blue-300 transition-colors cursor-pointer">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          module.difficulty === "Débutant" ? "bg-green-100" :
-                          module.difficulty === "Intermédiaire" ? "bg-yellow-100" :
-                          "bg-red-100"
-                        }`}>
-                          <module.icon className={`w-5 h-5 ${
-                            module.difficulty === "Débutant" ? "text-green-600" :
-                            module.difficulty === "Intermédiaire" ? "text-yellow-600" :
-                            "text-red-600"
-                          }`} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-stone-900">{module.title}</h4>
-                                {module.aiRecommended && (
-                                  <Badge className="bg-purple-100 text-purple-700 text-xs">
-                                    <Brain className="w-3 h-3 mr-1" />
-                                    IA
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-stone-500 mt-1 line-clamp-2">{module.description}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 mt-3 text-xs text-stone-500">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {module.duration}
-                            </span>
-                            <span>{module.category}</span>
-                            <Badge variant="outline" className="text-xs">
-                              {module.difficulty}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-stone-200">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="w-5 h-5 text-stone-600" />
-                Formations Assignées
-              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -381,7 +281,7 @@ export default function Training() {
                       <th className="text-left py-3 px-4 text-sm font-medium text-stone-700">Utilisateur</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-stone-700">Module</th>
                       <th className="text-center py-3 px-4 text-sm font-medium text-stone-700">Priorité</th>
-                      <th className="text-center py-3 px-4 text-sm font-medium text-stone-700">Progression</th>
+                      <th className="text-center py-3 px-4 text-sm font-medium text-stone-700">Statut</th>
                       <th className="text-right py-3 px-4 text-sm font-medium text-stone-700">Actions</th>
                     </tr>
                   </thead>
@@ -411,87 +311,118 @@ export default function Training() {
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <div className="flex items-center gap-2">
-                            <Progress value={training.progress} className="flex-1 h-2" />
-                            <span className="text-xs text-stone-500 w-10">{training.progress}%</span>
+                          <div className="flex items-center justify-center gap-2">
+                            {trainingStatusBadge(training.status, training.email_opened_at)}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="text-red-600"
-                            onClick={() => {
-                              setSelectedTrainingId(training.id);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            {training.isAiGenerated && training.recipientHasOpenedMail && (
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="text-blue-600"
+                                onClick={() => setViewingTraining(training)}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {training.isAiGenerated && !training.recipientHasOpenedMail && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex">
+                                    <Button size="sm" variant="ghost" className="text-stone-400" disabled aria-label="Contenu masqué jusqu'à consultation du mail">
+                                      <Lock className="w-4 h-4" />
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-xs">
+                                  Le contenu sera visible ici une fois le destinataire ouvert le mail de formation et cliqué sur le lien de confirmation.
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="text-red-600"
+                              onClick={() => {
+                                setSelectedTrainingId(training.id);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        <div className="space-y-6">
-          <Card className="border-stone-200">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-600" />
-                Classement
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {dynamicLeaderboard.map((user, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 rounded-lg hover:bg-stone-50">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                      user.rank === 1 ? "bg-yellow-100 text-yellow-700" :
-                      user.rank === 2 ? "bg-stone-200 text-stone-700" :
-                      user.rank === 3 ? "bg-orange-100 text-orange-700" :
-                      "bg-stone-100 text-stone-600"
-                    }`}>
-                      {user.rank}
-                    </div>
-                    <Avatar className="w-8 h-8">
-                      <AvatarFallback className="bg-stone-200 text-stone-700 text-xs">
-                        {user.name.split(" ").map(n => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="font-medium text-stone-900 text-sm">{user.name}</p>
-                      <p className="text-xs text-stone-500">{user.department}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-stone-900">{user.score}%</p>
-                      <p className="text-xs text-stone-500">{user.completed} modules</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+              {totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 1) setCurrentPage(currentPage - 1);
+                          }}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                        // Logic to show only a subset of pages if there are many
+                        if (
+                          totalPages > 7 &&
+                          page !== 1 &&
+                          page !== totalPages &&
+                          Math.abs(page - currentPage) > 1
+                        ) {
+                          if (Math.abs(page - currentPage) === 2) {
+                            return (
+                              <PaginationItem key={page}>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            );
+                          }
+                          return null;
+                        }
 
-          <Card className="border-stone-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Actions Rapides</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/reports')}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Générer rapport
-                </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/campaigns')}>
-                  <Play className="w-4 h-4 mr-2" />
-                  Démarrer simulation
-                </Button>
-              </div>
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              isActive={currentPage === page}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentPage(page);
+                              }}
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+
+                      <PaginationItem>
+                        <PaginationNext 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                          }}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -517,6 +448,30 @@ export default function Training() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!viewingTraining} onOpenChange={(open) => !open && setViewingTraining(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-blue-600" />
+              Contenu de la Formation envoyée
+            </DialogTitle>
+            <DialogDescription>
+              Voici l'article de formation généré par l'IA et envoyé à {viewingTraining?.user}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto mt-4 p-6 bg-stone-50 border border-stone-200 rounded-lg">
+            <div 
+              className="prose prose-stone max-w-none"
+              dangerouslySetInnerHTML={{ __html: viewingTraining?.content }}
+            />
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setViewingTraining(null)}>Fermer</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+    </TooltipProvider>
   );
 }

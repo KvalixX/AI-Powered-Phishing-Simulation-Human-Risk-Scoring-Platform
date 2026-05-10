@@ -107,3 +107,15 @@ export async function exportToPDF(elementId: string, filename: string) {
 export function handlePrint() {
   window.print();
 }
+
+/**
+ * Downloads a CSV template for user import
+ */
+export function downloadUserTemplateCSV() {
+  const headers = "first_name,last_name,email,department,position,seniority,language";
+  const exampleRow = "Jean,Dupont,jean.dupont@entreprise.com,IT,Développeur,senior,fr";
+  const csvContent = `${headers}\n${exampleRow}`;
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  saveAs(blob, `template_import_utilisateurs_kira.csv`);
+}

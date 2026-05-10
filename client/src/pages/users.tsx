@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { 
   Users as UsersIcon, 
@@ -22,7 +22,8 @@ import {
   TrendingUp,
   TrendingDown,
   Download,
-  Printer
+  Printer,
+  FileText
 } from "lucide-react";
 import { 
   Dialog,
@@ -102,7 +103,7 @@ import {
 import { useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Contact } from "@/lib/api";
-import { exportToExcel, exportToPDF } from "@/lib/utils";
+import { exportToExcel, exportToPDF, downloadUserTemplateCSV } from "@/lib/utils";
 import { Upload } from "lucide-react";
 
 export default function Users() {
@@ -225,6 +226,7 @@ export default function Users() {
         id: c.id,
         name: `${c.first_name} ${c.last_name}`,
         email: c.email,
+        avatar: (c as any).avatar,
         department: c.department || 'Non spécifié',
         role: c.position || 'Général',
         riskScore: rs,
@@ -333,6 +335,10 @@ export default function Users() {
           <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importContacts.isPending}>
             <Upload className="w-4 h-4 mr-2" />
             {importContacts.isPending ? "Importation..." : "Importer CSV"}
+          </Button>
+          <Button variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={downloadUserTemplateCSV}>
+            <FileText className="w-4 h-4 mr-2" />
+            Modèle CSV
           </Button>
           <Button variant="outline" onClick={() => exportToPDF('app-content', 'utilisateurs_kira')}>
             <Download className="w-4 h-4 mr-2" />
@@ -553,6 +559,7 @@ export default function Users() {
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10">
+                          <AvatarImage src={user.avatar} />
                           <AvatarFallback className="bg-stone-200 text-stone-700">
                             {user.name.split(" ").map(n => n[0]).join("")}
                           </AvatarFallback>

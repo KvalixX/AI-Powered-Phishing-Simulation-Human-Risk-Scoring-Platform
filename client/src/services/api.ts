@@ -41,6 +41,7 @@ export const authApi = {
     api.post("/register", data),
   getUser: () => api.get("/user"),
   updateProfile: (data: object) => api.put("/user", data),
+  deleteAccount: () => api.delete("/user"),
   resetPassword: (email: string) =>
     api.post("/reset-password", { email }),
   logout: () => api.post("/logout"),

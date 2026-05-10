@@ -14,7 +14,7 @@ class ContactController extends Controller
     {
         // Scope contacts to the authenticated user's organization
         // For demo purposes, if auth()->id() is null, fall back to 1.
-        $userId = auth()->id() ?? 1;
+        $userId = auth()->id();
         $contacts = Contact::with('riskScore')->where('user_id', $userId)->get();
         return response()->json($contacts);
     }
@@ -32,7 +32,7 @@ class ContactController extends Controller
             'training_history' => 'nullable|array',
         ]);
 
-        $validated['user_id'] = auth()->id() ?? 1;
+        $validated['user_id'] = auth()->id();
         $contact = Contact::create($validated);
 
         // Initialize risk score at 0
@@ -59,7 +59,7 @@ class ContactController extends Controller
         // Remove header if present
         $header = array_shift($data);
 
-        $userId = auth()->id() ?? 1;
+        $userId = auth()->id();
         $importedCount = 0;
 
         foreach ($data as $row) {

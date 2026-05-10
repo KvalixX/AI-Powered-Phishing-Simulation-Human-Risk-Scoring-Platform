@@ -19,7 +19,10 @@ class TrainingController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'contact_id' => 'required|exists:contacts,id',
+            'contact_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('contacts', 'id')->where(fn ($q) => $q->where('user_id', auth()->id()))
+            ],
             'training_module_id' => 'required|exists:training_modules,id',
             'status' => 'nullable|string|in:assigned,in_progress,completed',
             'ai_content' => 'nullable|string',

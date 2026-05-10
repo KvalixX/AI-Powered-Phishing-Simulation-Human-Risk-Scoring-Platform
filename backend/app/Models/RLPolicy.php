@@ -6,13 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use App\Traits\BelongsToUser;
+
 class RLPolicy extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToUser;
 
     protected $table = 'rl_policies';
 
     protected $fillable = [
+        'user_id',
         'campaign_id',
         'contact_id',
         'campaign_params',

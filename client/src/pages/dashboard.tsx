@@ -38,14 +38,7 @@ import {
   Legend
 } from "recharts";
 
-const riskScoreData = [
-  { month: "Jan", score: 65 },
-  { month: "Fév", score: 58 },
-  { month: "Mar", score: 52 },
-  { month: "Avr", score: 48 },
-  { month: "Mai", score: 42 },
-  { month: "Juin", score: 38 },
-];
+const riskScoreData: any[] = [];
 
 
 const quickActions = [
@@ -139,12 +132,12 @@ export default function Dashboard() {
     if (clickRateNum > 10) {
       insights.push({ 
         type: "warning", 
-        message: "Alerte : Taux de clics supérieur à la moyenne (12.4%). Renforcez la formation sur le Spear Phishing." 
+        message: `Alerte : Taux de clics élevé (${maliciousClickRate}). Une formation de sensibilisation est recommandée.` 
       });
     } else {
        insights.push({ 
         type: "success", 
-        message: "Tendance positive : La vigilance des utilisateurs a augmenté de 15% ce mois-ci." 
+        message: "Tendance positive : La vigilance des utilisateurs est en amélioration." 
       });
     }
 
@@ -189,7 +182,7 @@ export default function Dashboard() {
       <Card className="relative mb-8 border border-stone-200 bg-gradient-to-br from-stone-900 to-stone-800 overflow-hidden">
         <div className="relative p-8">
           <div className="flex items-center justify-between">
-            <div className="max-w-2xl">
+            <div className="max-w-4xl">
               <div className="flex items-center gap-2 mb-4">
                 <Brain className="w-6 h-6 text-blue-400" />
                 <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">IA Générative</Badge>
@@ -201,20 +194,20 @@ export default function Dashboard() {
                 Évaluez le risque humain avec des campagnes réalistes générées par IA,
                 mesurez les comportements et formez automatiquement vos équipes.
               </p>
-              <div className="flex gap-3">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => navigate('/campaigns')}>
+              <div className="flex gap-3 mt-4">
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap" onClick={() => navigate('/campaigns')}>
                   <Target className="w-4 h-4 mr-2" />
                   Lancer Campagne
                 </Button>
-                <Button variant="outline" size="lg" className="border-stone-600 text-stone-300 hover:bg-stone-800" onClick={() => navigate('/reports')}>
+                <Button size="lg" className="bg-stone-800 hover:bg-stone-700 text-white whitespace-nowrap border-0" onClick={() => navigate('/reports')}>
                   <BarChart3 className="w-4 h-4 mr-2" />
                   Voir Rapports
                 </Button>
-                <Button variant="outline" size="lg" className="border-stone-600 text-stone-300 hover:bg-stone-800" onClick={() => exportToPDF('app-content', 'dashboard_kira_complet')}>
+                <Button size="lg" className="bg-stone-800 hover:bg-stone-700 text-white whitespace-nowrap border-0" onClick={() => exportToPDF('app-content', 'dashboard_kira_complet')}>
                   <Download className="w-4 h-4 mr-2" />
                   Exporter en PDF
                 </Button>
-                <Button variant="outline" size="lg" className="border-stone-600 text-stone-300 hover:bg-stone-800" onClick={() => exportToExcel(fullDashboardData, "dashboard_data")}>
+                <Button size="lg" className="bg-stone-800 hover:bg-stone-700 text-white whitespace-nowrap border-0" onClick={() => exportToExcel(fullDashboardData, "dashboard_data")}>
                   <Download className="w-4 h-4 mr-2" />
                   Exporter en Excel
                 </Button>

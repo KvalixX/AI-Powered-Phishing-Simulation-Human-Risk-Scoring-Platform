@@ -18,7 +18,10 @@ class RLPolicyController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'campaign_id' => 'required|exists:campaigns,id',
+            'campaign_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('campaigns', 'id')->where(fn ($q) => $q->where('user_id', auth()->id()))
+            ],
             'campaign_params' => 'nullable|array',
             'rewards' => 'nullable|numeric',
             'state' => 'nullable|array',
